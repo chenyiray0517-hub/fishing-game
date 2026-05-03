@@ -16,10 +16,10 @@ class ShopUI {
   handleKey(key, player) {
     if (!this.open) return false;
     const items = this.items(player);
-    if (key === 'Escape')                            { this.close(); return true; }
+    if (key === 'Escape' || key === 'e' || key === 'E') { this.close(); return true; }
     if (key === 'ArrowUp')   { this.sel = Math.max(0, this.sel-1); return true; }
     if (key === 'ArrowDown') { this.sel = Math.min(items.length-1, this.sel+1); return true; }
-    if (key === 'e' || key === 'E' || key === 'Enter') { this.act(player, items[this.sel]); return true; }
+    if (key === 'Enter') { this.act(player, items[this.sel]); return true; }
     return true;
   }
 
@@ -186,7 +186,7 @@ class ShopUI {
       ctx.fillText(item.sub, x+W-18, iy+26);
     });
 
-    const hint = touch.isMobile ? '點擊品項購買／賣出  ✕ 關閉' : '↑↓ 選擇  E / Enter 確認  ESC 關閉';
+    const hint = touch.isMobile ? '點擊品項購買／賣出  ✕ 關閉' : '↑↓ 選擇  Enter 確認  E / ESC 關閉';
     ctx.textAlign = 'center'; ctx.font = '13px sans-serif'; ctx.fillStyle = '#445566';
     ctx.fillText(hint, cx, y+H-12);
 

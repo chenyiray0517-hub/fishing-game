@@ -137,14 +137,16 @@ const touch = {
     }
   },
 
-  // Write joystick direction into keys each frame
+  // Write joystick direction into keys each frame.
+  // On mobile, always overwrite arrow states so releasing the joystick
+  // immediately clears any residual true values left from the previous frame.
   applyKeys(keys) {
-    if (!this.joystick.active) return;
+    if (!this.isMobile) return;
     const j = this.joystick;
-    keys['ArrowLeft']  = j.dx < -0.25;
-    keys['ArrowRight'] = j.dx >  0.25;
-    keys['ArrowUp']    = j.dy < -0.25;
-    keys['ArrowDown']  = j.dy >  0.25;
+    keys['ArrowLeft']  = j.active && j.dx < -0.25;
+    keys['ArrowRight'] = j.active && j.dx >  0.25;
+    keys['ArrowUp']    = j.active && j.dy < -0.25;
+    keys['ArrowDown']  = j.active && j.dy >  0.25;
   },
 
   // Reset per-frame state — call at end of each game loop iteration
