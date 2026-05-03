@@ -199,97 +199,99 @@ class FishingGame {
       ctx.fillRect(cx-100*pct, cy+58, 200*pct, 10);
 
     } else if (this.state === 'tug') {
-      ctx.save(); // isolate all tug rendering — prevents any stray ctx state from outside
+      ctx.save();
       ctx.globalAlpha = 1;
       ctx.setLineDash([]);
 
       const f = this.tugFish;
-      const BAR_W = 520, BAR_H = 120;
-      const FW = 80, FH = 40;
-      const BAR_X = cx - BAR_W/2, BAR_Y = cy - BAR_H/2;
-
-      // Fish name
-      ctx.fillStyle = f.color; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(f.name, cx, BAR_Y - 80);
-
-      // Labels row
       const secsLeft = Math.ceil(this.tugTimeLeft / 60);
       const timeFrac = this.tugTimeLeft / (10 * 60);
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillStyle = '#88ffaa'; ctx.textAlign = 'left';
-      ctx.fillText('🎣 釣魚進度', BAR_X, BAR_Y - 52);
-      ctx.fillStyle = timeFrac < 0.34 ? '#ff6644' : '#aaddff';
-      ctx.textAlign = 'right';
-      ctx.fillText(`⏱ 剩餘 ${secsLeft} 秒`, BAR_X + BAR_W, BAR_Y - 52);
+      const progPct  = this.tugProgress;
+      const progCol  = progPct > 0.75 ? '#44ff88' : progPct > 0.4 ? '#88cc44' : '#22aa55';
 
-      // Progress bar
-      const progY = BAR_Y - 46, progH = 24;
-      ctx.fillStyle = '#0a1a2e';
-      ctx.fillRect(BAR_X, progY, BAR_W, progH);
-      const progPct = this.tugProgress;
-      const progCol = progPct > 0.75 ? '#44ff88' : progPct > 0.4 ? '#88cc44' : '#22aa55';
-      ctx.fillStyle = progCol;
-      ctx.fillRect(BAR_X, progY, BAR_W * progPct, progH);
-      ctx.strokeStyle = '#3a8a5a'; ctx.lineWidth = 1.5;
-      ctx.strokeRect(BAR_X, progY, BAR_W, progH);
-      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(`${Math.round(progPct * 100)}%`, cx, progY + progH - 6);
+      if (touch.isMobile) {
+        // ── Mobile: just the progress bar, no fish block ─────────────
+        const pW = 480, pH = 48, pX = cx - pW/2, pY = cy - 20;
 
-      // Main 2D area
-      ctx.fillStyle = '#081828';
-      ctx.strokeStyle = '#3a6aaa'; ctx.lineWidth = 2;
-      ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
-      ctx.strokeRect(BAR_X, BAR_Y, BAR_W, BAR_H);
+        ctx.fillStyle = f.color; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(f.name, cx, pY - 60);
 
-      // Following: desktop only (line overlaps fish block Y range)
-      const following = !touch.isMobile && this.lineY >= this.fishY && this.lineY <= this.fishY + FH;
-      const blockColor = touch.isMobile ? '#44aaff' : (following ? '#44ff88' : '#ff9900');
+        ctx.fillStyle = timeFrac < 0.34 ? '#ff6644' : '#aaddff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText(`⏱ 剩餘 ${secsLeft} 秒`, cx, pY - 18);
 
-      // ── Fish block ───────────────────────────────────────────────
-      const bx = BAR_X + this.fishX, by = BAR_Y + this.fishY;
-      // Pulsing glow via rgba strokeStyle — never touches globalAlpha
-      const pulse = (Math.sin(Date.now() / 120) + 1) / 2;
-      const glowA = (0.35 + pulse * 0.65).toFixed(3);
-      const glowRgb = touch.isMobile ? '68,170,255' : (following ? '68,255,136' : '255,153,0');
-      ctx.strokeStyle = `rgba(${glowRgb},${glowA})`; ctx.lineWidth = 8;
-      ctx.strokeRect(bx - 4, by - 4, FW + 8, FH + 8);
-      ctx.fillStyle = blockColor;
-      ctx.fillRect(bx, by, FW, FH);
-      ctx.strokeStyle = following ? '#ffffff' : '#ffcc55'; ctx.lineWidth = 2;
-      ctx.strokeRect(bx, by, FW, FH);
+        ctx.fillStyle = '#0a1a2e';
+        ctx.fillRect(pX, pY, pW, pH);
+        ctx.fillStyle = progCol;
+        ctx.fillRect(pX, pY, pW * progPct, pH);
+        ctx.strokeStyle = '#3a8a5a'; ctx.lineWidth = 2;
+        ctx.strokeRect(pX, pY, pW, pH);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 20px sans-serif';
+        ctx.fillText(`${Math.round(progPct * 100)}%`, cx, pY + pH - 12);
 
-      // Edge arrows pointing at fish block
-      const fishMidX = bx + FW / 2, fishMidY = by + FH / 2;
-      ctx.fillStyle = blockColor;
-      ctx.beginPath();
-      ctx.moveTo(fishMidX - 7, BAR_Y + 1); ctx.lineTo(fishMidX + 7, BAR_Y + 1); ctx.lineTo(fishMidX, BAR_Y + 11);
-      ctx.closePath(); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(BAR_X + BAR_W - 1, fishMidY - 7); ctx.lineTo(BAR_X + BAR_W - 1, fishMidY + 7); ctx.lineTo(BAR_X + BAR_W - 12, fishMidY);
-      ctx.closePath(); ctx.fill();
+        ctx.fillStyle = this.tapCooldown > 0 ? '#ffcc44' : '#aaddff';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.fillText(this.tapCooldown > 0 ? '冷卻中...' : '點擊螢幕填進度！', cx, pY + pH + 38);
 
-      // ── Desktop: horizontal line controlled by mouse ─────────────
-      if (!touch.isMobile) {
+      } else {
+        // ── Desktop: progress bar + 2D area with fish block ──────────
+        const BAR_W = 520, BAR_H = 120;
+        const FW = 80, FH = 40;
+        const BAR_X = cx - BAR_W/2, BAR_Y = cy - BAR_H/2;
+
+        ctx.fillStyle = f.color; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(f.name, cx, BAR_Y - 80);
+
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillStyle = '#88ffaa'; ctx.textAlign = 'left';
+        ctx.fillText('🎣 釣魚進度', BAR_X, BAR_Y - 52);
+        ctx.fillStyle = timeFrac < 0.34 ? '#ff6644' : '#aaddff';
+        ctx.textAlign = 'right';
+        ctx.fillText(`⏱ 剩餘 ${secsLeft} 秒`, BAR_X + BAR_W, BAR_Y - 52);
+
+        const progY = BAR_Y - 46, progH = 24;
+        ctx.fillStyle = '#0a1a2e'; ctx.fillRect(BAR_X, progY, BAR_W, progH);
+        ctx.fillStyle = progCol;  ctx.fillRect(BAR_X, progY, BAR_W * progPct, progH);
+        ctx.strokeStyle = '#3a8a5a'; ctx.lineWidth = 1.5; ctx.strokeRect(BAR_X, progY, BAR_W, progH);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(`${Math.round(progPct * 100)}%`, cx, progY + progH - 6);
+
+        ctx.fillStyle = '#081828'; ctx.strokeStyle = '#3a6aaa'; ctx.lineWidth = 2;
+        ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H); ctx.strokeRect(BAR_X, BAR_Y, BAR_W, BAR_H);
+
+        const following  = this.lineY >= this.fishY && this.lineY <= this.fishY + FH;
+        const blockColor = following ? '#44ff88' : '#ff9900';
+        const bx = BAR_X + this.fishX, by = BAR_Y + this.fishY;
+        const pulse = (Math.sin(Date.now() / 120) + 1) / 2;
+        const glowA = (0.35 + pulse * 0.65).toFixed(3);
+        ctx.strokeStyle = `rgba(${following ? '68,255,136' : '255,153,0'},${glowA})`; ctx.lineWidth = 8;
+        ctx.strokeRect(bx - 4, by - 4, FW + 8, FH + 8);
+        ctx.fillStyle = blockColor; ctx.fillRect(bx, by, FW, FH);
+        ctx.strokeStyle = following ? '#ffffff' : '#ffcc55'; ctx.lineWidth = 2;
+        ctx.strokeRect(bx, by, FW, FH);
+
+        const fishMidX = bx + FW/2, fishMidY = by + FH/2;
+        ctx.fillStyle = blockColor;
+        ctx.beginPath();
+        ctx.moveTo(fishMidX-7, BAR_Y+1); ctx.lineTo(fishMidX+7, BAR_Y+1); ctx.lineTo(fishMidX, BAR_Y+11);
+        ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(BAR_X+BAR_W-1, fishMidY-7); ctx.lineTo(BAR_X+BAR_W-1, fishMidY+7); ctx.lineTo(BAR_X+BAR_W-12, fishMidY);
+        ctx.closePath(); ctx.fill();
+
         const lineAbsY = BAR_Y + this.lineY;
         ctx.strokeStyle = following ? '#ffff44' : '#ffffff'; ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(BAR_X + 4, lineAbsY); ctx.lineTo(BAR_X + BAR_W - 4, lineAbsY);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(BAR_X+4, lineAbsY); ctx.lineTo(BAR_X+BAR_W-4, lineAbsY); ctx.stroke();
         ctx.fillStyle = following ? '#ffff44' : '#dddddd';
         ctx.beginPath();
-        ctx.moveTo(BAR_X + BAR_W + 4,  lineAbsY);
-        ctx.lineTo(BAR_X + BAR_W + 16, lineAbsY - 7);
-        ctx.lineTo(BAR_X + BAR_W + 16, lineAbsY + 7);
+        ctx.moveTo(BAR_X+BAR_W+4, lineAbsY); ctx.lineTo(BAR_X+BAR_W+16, lineAbsY-7); ctx.lineTo(BAR_X+BAR_W+16, lineAbsY+7);
         ctx.closePath(); ctx.fill();
+
         ctx.fillStyle = '#ffcc66'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText('移動滑鼠讓釣線對準方塊，填滿進度！', cx, BAR_Y + BAR_H + 28);
-      } else {
-        ctx.fillStyle = this.tapCooldown > 0 ? 'rgba(255,200,80,0.9)' : '#aaddff';
-        ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(this.tapCooldown > 0 ? '冷卻中...' : '點擊螢幕填進度！', cx, BAR_Y + BAR_H + 28);
       }
 
-      ctx.restore(); // end of tug isolation
+      ctx.restore();
 
     } else if (this.state === 'result') {
       if (this.resOk) {
