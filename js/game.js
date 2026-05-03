@@ -86,10 +86,15 @@ function handlePress(key) {
       const n = game.harbor.nearby(game.player);
       if (!n) return;
       if (n.type === 'boat') {
+        game.player.lying = false;
         game.scene = 'ocean';
       } else if (n.type === 'lake') {
+        game.player.lying = false;
         game.scene = 'lake';
         game.player.x = 735; game.player.y = 325;
+      } else if (n.type === 'bed') {
+        game.player.lying = !game.player.lying;
+        game.player.lyingTimer = 0;
       } else if (n.type === 'shop') {
         game.shop.show(n.shopType);
       }
@@ -144,6 +149,42 @@ function update() {
   } else if (game.scene === 'lake') {
     game.lake.update(game.keys, game.spacePressedThisFrame, game.player);
   }
+
+  updateSAN();
+}
+
+function updateSAN() {
+  const p = game.player;
+
+  // Death countdown
+  if (p.deathTimer > 0) {
+    p.deathTimer--;
+    if (p.deathTimer <= 0) {
+      p.fish = [];
+      p.san = 0; p.sanTimer = 0; p.deathTimer = -1; p.lying = false;
+      p.save();
+      game.ocean.fishing.reset();
+      game.lake.fishing.reset();
+      game.scene = 'harbor';
+      p.x = game.harbor.BED.x; p.y = game.harbor.BED.y;
+    }
+    return;
+  }
+
+  // Lying in bed recovers SAN (1/sec)
+  if (p.lying && game.scene === 'harbor') {
+    p.lyingTimer++;
+    if (p.lyingTimer >= 60) { p.lyingTimer = 0; p.san = Math.max(0, p.san - 1); }
+    return;
+  }
+  if (p.lying) p.lying = false; // cancel lying outside harbor
+
+  // Passive SAN increase: +1 every 3 seconds (180 frames)
+  p.sanTimer++;
+  if (p.sanTimer >= 180) { p.sanTimer = 0; p.san = Math.min(100, p.san + 1); }
+
+  // Trigger death countdown
+  if (p.san >= 100 && p.deathTimer < 0) p.deathTimer = 5 * 60;
 }
 
 function render() {
@@ -163,6 +204,53 @@ function render() {
   }
 
   touch.render(ctx);
+  renderSAN(ctx, game.player);
+}
+
+function renderSAN(ctx, p) {
+  if (p.san <= 0 && p.deathTimer < 0) return;
+
+  // Player canvas position
+  const px = (game.scene === 'ocean') ? p.bx : p.x;
+  const py = (game.scene === 'ocean') ? p.by - 68 : p.y - p.h - 12;
+
+  // SAN bar above player head
+  const barW = 44, barH = 5, bx = px - barW / 2;
+  const col = p.san >= 90 ? '#ff2222' : p.san >= 70 ? '#ff8800' : '#4488ff';
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(bx - 1, py - 1, barW + 2, barH + 2);
+  ctx.fillStyle = col; ctx.fillRect(bx, py, barW * p.san / 100, barH);
+  ctx.fillStyle = '#ccc'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(`SAN ${p.san}`, px, py - 3);
+
+  // Red vignette builds up from san 70
+  if (p.san >= 70) {
+    const intensity = (p.san - 70) / 30;
+    const vg = ctx.createRadialGradient(CONFIG.W/2, CONFIG.H/2, CONFIG.W*0.28, CONFIG.W/2, CONFIG.H/2, CONFIG.W*0.82);
+    vg.addColorStop(0, 'rgba(140,0,0,0)');
+    vg.addColorStop(1, `rgba(140,0,0,${(intensity * 0.52).toFixed(3)})`);
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, CONFIG.W, CONFIG.H);
+  }
+
+  // Warning at 90+ (flashing text below HUD)
+  if (p.san >= 90 && p.deathTimer < 0) {
+    if (Math.floor(Date.now() / 380) % 2) {
+      ctx.fillStyle = 'rgba(255,40,40,0.95)';
+      ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('⚠ 神智崩潰！快回床上休息！', CONFIG.W / 2, 70);
+    }
+  }
+
+  // Death countdown overlay
+  if (p.deathTimer > 0) {
+    const secs = Math.ceil(p.deathTimer / 60);
+    const pulse = (Math.sin(Date.now() / 180) + 1) / 2;
+    ctx.fillStyle = `rgba(120,0,0,${(0.28 + pulse * 0.28).toFixed(3)})`;
+    ctx.fillRect(0, 0, CONFIG.W, CONFIG.H);
+    ctx.fillStyle = '#ff5555'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('你快失去理智了…', CONFIG.W / 2, CONFIG.H / 2 - 22);
+    ctx.fillStyle = '#ffaaaa'; ctx.font = 'bold 24px sans-serif';
+    ctx.fillText(`${secs} 秒後死亡`, CONFIG.W / 2, CONFIG.H / 2 + 22);
+  }
 }
 
 window.addEventListener('load', init);

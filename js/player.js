@@ -16,6 +16,14 @@ class Player {
     this.upgrades = { line: 0, hook: 0, reel: 0 };
     this.fish = [];
     this._savedAt = 0;
+
+    // SAN (sanity) — ephemeral, not saved
+    this.san       = 0;
+    this.sanTimer  = 0;   // frames since last +1 san
+    this.deathTimer = -1; // -1 = alive; >0 = frames until death
+    this.lying     = false;
+    this.lyingTimer = 0;  // frames since last -1 san
+
     this.load();
   }
 

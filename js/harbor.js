@@ -3,6 +3,7 @@ class HarborScene {
     this.WATER_Y = 405;
     this.PIER    = { x:316, y:405, w:168, h:148 };
     this.BOAT    = { x:358, y:460, w:84, h:48 };
+    this.BED     = { x: 80, y: 375 };
 
     this.BUILDINGS = [
       { x:45,  y:88, w:158, h:148, type:'rod',     label:'釣竿商店', color:'#3d2a18', roof:'#7a5520', winCol:'#c8e8ff' },
@@ -25,6 +26,8 @@ class HarborScene {
     const bo = this.BOAT;
     const bcx = bo.x+bo.w/2, bcy = bo.y+bo.h/2;
     if (Math.hypot(x-bcx, y-bcy) < 100) return { type:'boat' };
+    // Bed (respawn / san recovery)
+    if (Math.hypot(x - this.BED.x, y - this.BED.y) < 58) return { type: 'bed' };
     // Lake path (right side, below fish market)
     if (Math.hypot(x - (CONFIG.W - 32), y - 328) < 78) return { type: 'lake' };
     return null;
@@ -52,6 +55,14 @@ class HarborScene {
   update(keys, player) {
     this.waveOff += 0.018;
     this.bobT += 0.04;
+
+    // Cancel lying if any movement key pressed
+    const moving = keys['ArrowLeft']||keys['a']||keys['A']||
+                   keys['ArrowRight']||keys['d']||keys['D']||
+                   keys['ArrowUp']||keys['w']||keys['W']||
+                   keys['ArrowDown']||keys['s']||keys['S'];
+    if (player.lying && moving) player.lying = false;
+    if (player.lying) return;
 
     let dx=0, dy=0;
     if (keys['ArrowLeft']  || keys['a'] || keys['A']) dx=-1;
@@ -181,6 +192,7 @@ class HarborScene {
       const SHOP_LABELS = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場' };
       const labelText = n.type === 'boat' ? '出海'
                       : n.type === 'lake' ? '前往湖邊'
+                      : n.type === 'bed'  ? (player.lying ? '起身' : '躺下 (恢復 SAN)')
                       : (SHOP_LABELS[n.shopType] || '進入');
       const label = touch.isMobile ? `👆 ${labelText}` : `[E] ${labelText}`;
       const tw = ctx.measureText(label).width + 24;
@@ -195,9 +207,34 @@ class HarborScene {
       touch.clearInteractRect();
     }
 
+    this._renderBed(ctx);
     this._renderLakePath(ctx);
     this.renderPlayer(ctx, player);
     this.renderHUD(ctx, player);
+  }
+
+  _renderBed(ctx) {
+    const bx = this.BED.x, by = this.BED.y;
+    // Wooden frame
+    ctx.fillStyle = '#8a5c2a'; ctx.fillRect(bx - 24, by - 46, 48, 56);
+    // Mattress
+    ctx.fillStyle = '#e8d8c0'; ctx.fillRect(bx - 20, by - 44, 40, 48);
+    // Pillow
+    ctx.fillStyle = '#f8f2ea';
+    ctx.beginPath(); ctx.roundRect(bx - 16, by - 42, 32, 16, 4); ctx.fill();
+    ctx.strokeStyle = '#ddd0c0'; ctx.lineWidth = 1; ctx.strokeRect(bx - 16, by - 42, 32, 16);
+    // Blanket
+    ctx.fillStyle = '#5872b8'; ctx.fillRect(bx - 20, by - 25, 40, 29);
+    ctx.strokeStyle = '#4860a0'; ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath(); ctx.moveTo(bx - 20, by - 20 + i * 8); ctx.lineTo(bx + 20, by - 20 + i * 8); ctx.stroke();
+    }
+    // Bed frame outline
+    ctx.strokeStyle = '#6a3e10'; ctx.lineWidth = 2;
+    ctx.strokeRect(bx - 24, by - 46, 48, 56);
+    // Label
+    ctx.fillStyle = '#aa8855'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('床', bx, by + 16);
   }
 
   _renderLakePath(ctx) {
@@ -237,6 +274,21 @@ class HarborScene {
   }
 
   renderPlayer(ctx, p) {
+    // Lying in bed
+    if (p.lying) {
+      const bx = this.BED.x, by = this.BED.y - 20;
+      ctx.fillStyle = '#5872b8';
+      ctx.beginPath(); ctx.ellipse(bx, by, 16, 9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f0c890'; ctx.beginPath(); ctx.arc(bx - 14, by - 1, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#3a2010'; ctx.beginPath(); ctx.arc(bx - 14, by - 1, 8, Math.PI, 0); ctx.fill();
+      const t = Date.now() / 700;
+      ctx.fillStyle = 'rgba(130,190,255,0.9)'; ctx.textAlign = 'left';
+      ctx.font = `${12 + Math.sin(t) * 1.5}px sans-serif`; ctx.fillText('z', bx + 14, by - 18);
+      ctx.font = `${10 + Math.sin(t + 1) * 1.5}px sans-serif`; ctx.fillText('z', bx + 20, by - 27);
+      ctx.font = `${8 + Math.sin(t + 2) * 1.5}px sans-serif`; ctx.fillText('z', bx + 25, by - 35);
+      return;
+    }
+
     const { x, y, w, h, dir } = p;
     // Shadow
     ctx.fillStyle='rgba(0,0,0,0.28)';
