@@ -20,6 +20,9 @@ const touch = {
   // Tug tap (per-frame, cleared after each loop)
   tugTapped: false,
 
+  // Energy drink button tap (per-frame)
+  drinkTapped: false,
+
   // Interact button bounding rect (set by harbor render each frame)
   _iRect: null,
 
@@ -62,6 +65,12 @@ const touch = {
       // Shop modal — any tap goes to shop handler
       if (game.shop.open) {
         this.shopTap = p;
+        continue;
+      }
+
+      // Energy drink button (top-right, always accessible)
+      if (game.player.energyDrinks > 0 && Math.hypot(p.x - (CONFIG.W - 52), p.y - 68) < 30) {
+        this.drinkTapped = true;
         continue;
       }
 
@@ -152,6 +161,7 @@ const touch = {
     this.interactTapped = false;
     this.shopTap        = null;
     this.tugTapped      = false;
+    this.drinkTapped    = false;
   },
 
   // ── Rendering ────────────────────────────────────────────────────────

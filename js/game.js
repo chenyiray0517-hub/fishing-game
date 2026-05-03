@@ -5,6 +5,7 @@ const game = {
   keys: {},
   spacePressedThisFrame: false,
   mouse: { x: 400, y: 300 },
+  drinkNotify: { text: '', t: 0 },
 };
 
 function init() {
@@ -101,9 +102,15 @@ function handlePress(key) {
     } else if (game.scene === 'ocean') {
       game.ocean.tryFish(game.player);
     } else if (game.scene === 'lake') {
-      game.lake.tryFish(game.player);
+      if (game.lake.nearbyNPC(game.player)) {
+        game.shop.show('energy');
+      } else {
+        game.lake.tryFish(game.player);
+      }
     }
   }
+
+  if (key === 'f' || key === 'F') { drinkEnergy(); return; }
 }
 
 let lastT = 0;
@@ -123,6 +130,8 @@ function update() {
   touch.applyKeys(game.keys);
 
   // Touch action button → space press (cast / bite)
+  if (touch.drinkTapped) drinkEnergy();
+
   if (touch.actionTapped && (game.scene === 'ocean' || game.scene === 'lake')) {
     const sceneObj = game.scene === 'ocean' ? game.ocean : game.lake;
     const fs = sceneObj.fishing.state;
@@ -151,6 +160,16 @@ function update() {
   }
 
   updateSAN();
+}
+
+function drinkEnergy() {
+  const p = game.player;
+  if (p.energyDrinks <= 0) return;
+  p.energyDrinks--;
+  p.san = Math.max(0, p.san - 25);
+  if (p.deathTimer > 0 && p.san < 100) p.deathTimer = -1;
+  p.save();
+  game.drinkNotify = { text: `🥤 SAN -25 → ${p.san}`, t: 130 };
 }
 
 function updateSAN() {
@@ -238,6 +257,28 @@ function renderSAN(ctx, p) {
       ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText('⚠ 神智崩潰！快回床上休息！', CONFIG.W / 2, 70);
     }
+  }
+
+  // Drink notification
+  if (game.drinkNotify.t > 0) {
+    game.drinkNotify.t--;
+    const a = Math.min(1, game.drinkNotify.t / 30);
+    ctx.fillStyle = `rgba(80,220,120,${a.toFixed(3)})`;
+    ctx.font = 'bold 17px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(game.drinkNotify.text, CONFIG.W / 2, CONFIG.H / 2 - 90);
+  }
+
+  // Mobile drink button (top-right, below HUD)
+  if (touch.isMobile && p.energyDrinks > 0) {
+    const bx = CONFIG.W - 52, by = 68, br = 24;
+    ctx.fillStyle = 'rgba(20,140,60,0.52)';
+    ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#66ffaa'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.stroke();
+    ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff'; ctx.fillText('🥤', bx, by + 6);
+    ctx.fillStyle = '#ffff44'; ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(`×${p.energyDrinks}`, bx + 16, by - 13);
   }
 
   // Death countdown overlay

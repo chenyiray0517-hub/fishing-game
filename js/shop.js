@@ -90,6 +90,23 @@ class ShopUI {
         list.push({ label: '全部賣出', sub: `共 $${total}`, hint: '', data: 'sell_all' });
         return list;
 
+      case 'energy': {
+        const full = player.energyDrinks >= 3;
+        return [
+          {
+            label: '能量飲料 🥤',
+            sub:   full ? `已達上限 (${player.energyDrinks}/3)` : '$300',
+            hint:  `庫存: ${player.energyDrinks}/3  飲用後 SAN -25`,
+            full,
+            data: { id: 'energyDrink', price: 300 },
+          },
+          {
+            label: touch.isMobile ? '📱 點右上角 🥤 按鈕飲用' : '⌨️ 按 F 鍵飲用',
+            sub: '', hint: '隨時使用，立即見效', data: null,
+          },
+        ];
+      }
+
       default: return [];
     }
   }
@@ -125,6 +142,12 @@ class ShopUI {
       if (player.money < cost) { this.notify('金幣不足！', false); return; }
       player.money -= cost; player.upgrades[u.id]++;
       player.save(); this.notify(`${u.name} 升至 Lv${player.upgrades[u.id]}！`);
+
+    } else if (this.type === 'energy') {
+      if (item.full) { this.notify('能量飲料已達上限 (3/3)！', false); return; }
+      if (player.money < 300) { this.notify('金幣不足！', false); return; }
+      player.money -= 300; player.energyDrinks++;
+      player.save(); this.notify(`購買能量飲料！庫存 ${player.energyDrinks}/3`);
 
     } else if (this.type === 'market') {
       if (item.data === 'sell_all') {
@@ -174,7 +197,7 @@ class ShopUI {
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.roundRect(x, y, W, H, 12); ctx.fill(); ctx.stroke();
 
-    const titles = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場' };
+    const titles = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場', energy:'能量飲料販售' };
     ctx.fillStyle = '#88ccff'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(titles[this.type]||'', cx, y+34);
 

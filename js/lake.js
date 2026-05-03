@@ -4,11 +4,17 @@ class LakeScene {
     this.waveOff  = 0;
     // Lake ellipse
     this.LAKE = { cx: 490, cy: 360, rx: 215, ry: 150 };
+    // NPC (energy drink vendor)
+    this.NPC = { x: 722, y: 215 };
   }
 
   _onLake(x, y) {
     const L = this.LAKE;
     return ((x - L.cx) / L.rx) ** 2 + ((y - L.cy) / L.ry) ** 2 < 1;
+  }
+
+  nearbyNPC(player) {
+    return Math.hypot(player.x - this.NPC.x, player.y - this.NPC.y) < 65;
   }
 
   nearbySpot(player) {
@@ -129,16 +135,29 @@ class LakeScene {
     }
 
     this._drawExitPath(ctx);
+    this._drawNPC(ctx);
 
-    // Nearby spot prompt
+    // Nearby prompts
+    touch.clearInteractRect();
     if (!this.fishing.state) {
       const ns = this.nearbySpot(player);
+      const nearNPC = this.nearbyNPC(player);
       if (ns) {
         const hasBait = player.baitCount > 0;
         ctx.fillStyle = 'rgba(0,0,0,0.78)';
         ctx.beginPath(); ctx.roundRect(player.x - 52, player.y - 72, 104, 28, 6); ctx.fill();
         ctx.fillStyle = hasBait ? '#ffff44' : '#ff6644'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText(hasBait ? (touch.isMobile ? '點右下按鈕釣魚' : '[E] 開始釣魚') : '魚餌不足！', player.x, player.y - 53);
+      } else if (nearNPC) {
+        const label = touch.isMobile ? '👆 購買能量飲料' : '[E] 購買能量飲料';
+        ctx.font = 'bold 13px sans-serif';
+        const tw = ctx.measureText(label).width + 24;
+        const lbx = player.x - tw / 2, lby = player.y - 64;
+        ctx.fillStyle = 'rgba(0,0,0,0.82)';
+        ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.fill();
+        ctx.fillStyle = '#88ff88'; ctx.textAlign = 'center';
+        ctx.fillText(label, player.x, player.y - 44);
+        touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
       }
     }
 
@@ -180,6 +199,43 @@ class LakeScene {
       ctx.fillStyle = '#8aaa10';
       ctx.beginPath(); ctx.ellipse(rx + (i % 2) * 5, ry - 28, 3.5, 8, (i % 3) * 0.2, 0, Math.PI * 2); ctx.fill();
     }
+  }
+
+  _drawNPC(ctx) {
+    const nx = this.NPC.x, ny = this.NPC.y;
+    const w = 22, h = 32;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(nx, ny + 2, w / 2, 5, 0, 0, Math.PI * 2); ctx.fill();
+    // Body (white lab coat with green trim)
+    ctx.fillStyle = '#d8dce0'; ctx.fillRect(nx - w / 2, ny - h + 10, w, h - 10);
+    ctx.fillStyle = '#4aaa55'; ctx.fillRect(nx - w / 2, ny - h + 10, 4, h - 10);
+    ctx.fillRect(nx + w / 2 - 4, ny - h + 10, 4, h - 10);
+    // Head
+    ctx.fillStyle = '#f5b870'; ctx.beginPath(); ctx.arc(nx, ny - h + 7, w / 2 + 1, 0, Math.PI * 2); ctx.fill();
+    // Hair (dark, messy)
+    ctx.fillStyle = '#2a1a08'; ctx.beginPath(); ctx.arc(nx, ny - h + 7, w / 2 + 1, Math.PI, 0); ctx.fill();
+    ctx.fillRect(nx - w / 2, ny - h + 4, 6, 6);
+    // Eyes & smile
+    ctx.fillStyle = '#333';
+    ctx.fillRect(nx - 5, ny - h + 8, 3, 3); ctx.fillRect(nx + 2, ny - h + 8, 3, 3);
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(nx, ny - h + 12, 4, 0.1, Math.PI - 0.1); ctx.stroke();
+    // Cooler box (blue, with can icon)
+    ctx.fillStyle = '#2255aa'; ctx.fillRect(nx + w / 2 + 1, ny - h + 14, 14, 18);
+    ctx.strokeStyle = '#4477cc'; ctx.lineWidth = 1; ctx.strokeRect(nx + w / 2 + 1, ny - h + 14, 14, 18);
+    ctx.fillStyle = '#aaccff'; ctx.fillRect(nx + w / 2 + 3, ny - h + 16, 10, 6);
+    ctx.fillStyle = '#88aaee'; ctx.font = '8px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('🥤', nx + w / 2 + 8, ny - h + 29);
+    // Speech bubble
+    const bw = 110, bh = 28, bx = nx - bw / 2 - 12, by = ny - h - 40;
+    ctx.fillStyle = 'rgba(255,255,255,0.94)';
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 7); ctx.fill();
+    ctx.strokeStyle = '#aac8aa'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(nx - 8, by + bh); ctx.lineTo(nx - 2, by + bh + 9); ctx.lineTo(nx + 6, by + bh); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.94)'; ctx.fill(); ctx.strokeStyle = '#aac8aa'; ctx.stroke();
+    ctx.fillStyle = '#226622'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('能量飲料 $300！', bx + bw / 2, by + bh / 2 + 4);
   }
 
   _drawExitPath(ctx) {

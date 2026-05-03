@@ -17,6 +17,9 @@ class Player {
     this.fish = [];
     this._savedAt = 0;
 
+    // Energy drinks — saved
+    this.energyDrinks = 0;
+
     // SAN (sanity) — ephemeral, not saved
     this.san       = 0;
     this.sanTimer  = 0;   // frames since last +1 san
@@ -58,8 +61,9 @@ class Player {
         equippedRod:  this.equippedRod,
         bait:         this.bait,
         equippedBait: this.equippedBait,
-        upgrades:     this.upgrades,
-        fish:         this.fish,
+        upgrades:      this.upgrades,
+        fish:          this.fish,
+        energyDrinks:  this.energyDrinks,
       }));
       this._savedAt = Date.now();
     } catch(e) {}
@@ -77,6 +81,7 @@ class Player {
       this.equippedBait = d.equippedBait ?? this.equippedBait;
       this.upgrades     = d.upgrades     ?? this.upgrades;
       this.fish         = d.fish         ?? this.fish;
+      this.energyDrinks = d.energyDrinks ?? this.energyDrinks;
       // Sanitize: equippedRod must be owned
       if (!this.ownedRods.includes(this.equippedRod))
         this.equippedRod = this.ownedRods[0] || 'wood';
