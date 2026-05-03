@@ -177,12 +177,18 @@ class HarborScene {
     const n = this.nearby(player);
     if (n) {
       const SHOP_LABELS = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場' };
-      const label = n.type === 'boat' ? '[E] 出海' : `[E] ${SHOP_LABELS[n.shopType]||'進入'}`;
-      const tw = ctx.measureText(label).width + 20;
-      ctx.fillStyle='rgba(0,0,0,0.8)';
-      ctx.beginPath(); ctx.roundRect(player.x - tw/2, player.y-62, tw, 26, 6); ctx.fill();
-      ctx.fillStyle='#ffff44'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
-      ctx.fillText(label, player.x, player.y-44);
+      const labelText = n.type === 'boat' ? '出海' : (SHOP_LABELS[n.shopType] || '進入');
+      const label = touch.isMobile ? `👆 ${labelText}` : `[E] ${labelText}`;
+      const tw = ctx.measureText(label).width + 24;
+      const bx = player.x - tw / 2, by = player.y - 64;
+      ctx.fillStyle = 'rgba(0,0,0,0.82)';
+      ctx.beginPath(); ctx.roundRect(bx, by, tw, 28, 7); ctx.fill();
+      ctx.fillStyle = '#ffff44'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(label, player.x, player.y - 44);
+      // Register tap area for mobile (slightly larger than visual button)
+      touch.setInteractRect(bx - 10, by - 10, tw + 20, 48);
+    } else {
+      touch.clearInteractRect();
     }
 
     this.renderPlayer(ctx, player);
@@ -238,6 +244,7 @@ class HarborScene {
     // Controls hint
     ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(0,CONFIG.H-28,CONFIG.W,28);
     ctx.fillStyle='#445566'; ctx.font='12px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('WASD / 方向鍵 移動  E 互動', CONFIG.W/2, CONFIG.H-10);
+    const hint = touch.isMobile ? '左搖桿移動  靠近建築後點上方按鈕互動' : 'WASD / 方向鍵 移動  E 互動';
+    ctx.fillText(hint, CONFIG.W/2, CONFIG.H-10);
   }
 }

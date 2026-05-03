@@ -117,6 +117,28 @@ class ShopUI {
     }
   }
 
+  handleTouch(p) {
+    if (!p) return;
+    const W = 500, H = 440, cx = CONFIG.W/2, cy = CONFIG.H/2;
+    const x = cx - W/2, y = cy - H/2;
+
+    // Close button (top-right of modal)
+    if (Math.hypot(p.x - (x + W - 22), p.y - (y + 22)) < 26) {
+      this.close(); return;
+    }
+
+    const items = this.items(game.player);
+    const iH = 68, listY = y + 56;
+    for (let i = 0; i < items.length; i++) {
+      const iy = listY + i * iH;
+      if (p.x >= x + 8 && p.x <= x + W - 8 && p.y >= iy && p.y <= iy + iH) {
+        this.sel = i;
+        this.act(game.player, items[i]);
+        return;
+      }
+    }
+  }
+
   render(ctx, player) {
     if (!this.open) return;
     const W = 500, H = 440, cx = CONFIG.W/2, cy = CONFIG.H/2;
@@ -133,6 +155,12 @@ class ShopUI {
     const titles = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場' };
     ctx.fillStyle = '#88ccff'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(titles[this.type]||'', cx, y+34);
+
+    // Close button
+    ctx.fillStyle = 'rgba(180,60,50,0.75)';
+    ctx.beginPath(); ctx.arc(x + W - 22, y + 22, 16, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('✕', x + W - 22, y + 27);
 
     ctx.strokeStyle = '#2a4a7a'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x+20, y+46); ctx.lineTo(x+W-20, y+46); ctx.stroke();
@@ -159,8 +187,9 @@ class ShopUI {
       ctx.fillText(item.sub, x+W-18, iy+26);
     });
 
+    const hint = touch.isMobile ? '點擊品項購買／賣出  ✕ 關閉' : '↑↓ 選擇  E / Enter 確認  ESC 關閉';
     ctx.textAlign = 'center'; ctx.font = '13px sans-serif'; ctx.fillStyle = '#445566';
-    ctx.fillText('↑↓ 選擇  E / Enter 確認  ESC 關閉', cx, y+H-12);
+    ctx.fillText(hint, cx, y+H-12);
 
     if (this.msgT > 0) {
       const alpha = Math.min(1, this.msgT/30);

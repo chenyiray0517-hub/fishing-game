@@ -20,7 +20,21 @@ function init() {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup',   e => { game.keys[e.key] = false; });
 
+  touch.init(game.canvas);
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
   requestAnimationFrame(loop);
+}
+
+function resizeCanvas() {
+  const aspect = CONFIG.W / CONFIG.H;
+  const ww = window.innerWidth, wh = window.innerHeight;
+  let w, h;
+  if (ww / wh > aspect) { h = wh; w = h * aspect; }
+  else                   { w = ww; h = w / aspect; }
+  game.canvas.style.width  = w + 'px';
+  game.canvas.style.height = h + 'px';
 }
 
 function onKeyDown(e) {
@@ -79,12 +93,32 @@ function loop(ts) {
   render();
 
   game.spacePressedThisFrame = false;
+  touch.clearFrame();
   requestAnimationFrame(loop);
 }
 
 function update() {
+  // Apply virtual joystick to keyboard state
+  touch.applyKeys(game.keys);
+
+  // Touch action button → space press (cast / bite)
+  if (touch.actionTapped && game.scene === 'ocean') {
+    const fs = game.ocean.fishing.state;
+    if (!fs) {
+      game.ocean.tryFish(game.player);
+    } else if (fs === 'cast' || fs === 'bite') {
+      game.spacePressedThisFrame = true;
+    }
+  }
+
+  // Touch interact button → E key
+  if (touch.interactTapped) handlePress('e');
+
   game.shop.update();
-  if (game.shop.open) return;
+  if (game.shop.open) {
+    if (touch.shopTap) game.shop.handleTouch(touch.shopTap);
+    return;
+  }
 
   if (game.scene === 'harbor') {
     game.harbor.update(game.keys, game.player);
@@ -106,6 +140,8 @@ function render() {
   if (game.shop.open) {
     game.shop.render(ctx, game.player);
   }
+
+  touch.render(ctx);
 }
 
 window.addEventListener('load', init);

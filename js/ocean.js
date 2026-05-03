@@ -164,7 +164,14 @@ class OceanScene {
     ctx.fillStyle='#88ff88';
     ctx.fillText(`🐟 漁獲 ${player.fish.length} 條`, 260, 28);
 
-    ctx.fillStyle='#334455'; ctx.font='13px sans-serif'; ctx.textAlign='right';
-    ctx.fillText('ESC 返回港口', CONFIG.W-14, 28);
+    if (touch.isMobile) {
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.beginPath(); ctx.roundRect(CONFIG.W - 114, 8, 106, 30, 6); ctx.fill();
+      ctx.fillStyle = '#88aacc'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('◀ 返回港口', CONFIG.W - 61, 28);
+    } else {
+      ctx.fillStyle='#334455'; ctx.font='13px sans-serif'; ctx.textAlign='right';
+      ctx.fillText('ESC 返回港口', CONFIG.W-14, 28);
+    }
   }
 }

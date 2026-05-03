@@ -101,6 +101,11 @@ class FishingGame {
         const sp = 1.5 + this.tugFish.difficulty * 0.4;
         this.fishVX = (Math.random() - 0.5) * sp * 2.5;
         this.fishVY = (Math.random() - 0.5) * sp * 1.2;
+        // Re-clamp after velocity kick so new direction takes effect next frame cleanly
+        if (this.fishX <= 0 && this.fishVX < 0)          this.fishVX =  Math.abs(this.fishVX);
+        if (this.fishX >= BAR_W - FW && this.fishVX > 0)  this.fishVX = -Math.abs(this.fishVX);
+        if (this.fishY <= 0 && this.fishVY < 0)           this.fishVY =  Math.abs(this.fishVY);
+        if (this.fishY >= BAR_H - FH && this.fishVY > 0)  this.fishVY = -Math.abs(this.fishVY);
       }
       // Ensure fish never stops — guarantee minimum speed
       const minSpd = 0.6;
@@ -108,10 +113,17 @@ class FishingGame {
       if (Math.abs(this.fishVY) < minSpd * 0.5) this.fishVY = this.fishVY < 0 ? -minSpd * 0.5 : minSpd * 0.5;
 
       // ── Player line physics ──────────────────────────────────────
-      if (keys[' '] || keys['Space']) this.lineVY -= 0.8; // SPACE → up
-      this.lineVY += 0.3;   // gravity → down
-      this.lineVY *= 0.92;  // damping
-      this.lineY  += this.lineVY;
+      if (touch.tugY !== null) {
+        // Touch: map full screen height directly to bar height
+        const target = Math.max(0, Math.min(BAR_H, (touch.tugY / CONFIG.H) * BAR_H));
+        this.lineY  += (target - this.lineY) * 0.28;
+        this.lineVY  = 0;
+      } else {
+        if (keys[' '] || keys['Space']) this.lineVY -= 0.8;
+        this.lineVY += 0.3;
+        this.lineVY *= 0.92;
+        this.lineY  += this.lineVY;
+      }
       if (this.lineY < 0)     { this.lineY = 0;     this.lineVY = 0; }
       if (this.lineY > BAR_H) { this.lineY = BAR_H; this.lineVY = 0; }
 
@@ -158,14 +170,16 @@ class FishingGame {
       ctx.fillStyle='#cce8ff'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center';
       ctx.fillText('拋竿力道', cx, by-12);
       ctx.fillStyle='#ffff88'; ctx.font='14px sans-serif';
-      ctx.fillText('按 SPACE 拋竿', cx, by+bh+22);
+      ctx.fillText(touch.isMobile ? '點擊右下按鈕拋竿' : '按 SPACE 拋竿', cx, by+bh+22);
 
     } else if (this.state === 'wait') {
       const dots='.'.repeat((Math.floor(this.blink/22)%3)+1);
       ctx.fillStyle='#88ccff'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center';
       ctx.fillText(`等待魚上鉤${dots}`, cx, cy);
-      ctx.fillStyle='#445566'; ctx.font='13px sans-serif';
-      ctx.fillText('ESC 取消', cx, cy+30);
+      if (!touch.isMobile) {
+        ctx.fillStyle='#445566'; ctx.font='13px sans-serif';
+        ctx.fillText('ESC 取消', cx, cy+30);
+      }
 
     } else if (this.state === 'bite') {
       if (Math.floor(this.biteT/7)%2===0) {
@@ -173,7 +187,7 @@ class FishingGame {
         ctx.fillText('!! 魚上鉤了 !!', cx, cy-10);
       }
       ctx.fillStyle='#ffcc44'; ctx.font='bold 18px sans-serif'; ctx.textAlign='center';
-      ctx.fillText('快按 SPACE 收竿！', cx, cy+36);
+      ctx.fillText(touch.isMobile ? '快點右下按鈕收竿！' : '快按 SPACE 收竿！', cx, cy+36);
       const pct = 1 - this.biteT/75;
       ctx.fillStyle='rgba(255,200,0,0.5)';
       ctx.fillRect(cx-100*pct, cy+58, 200*pct, 10);
@@ -229,11 +243,18 @@ class FishingGame {
       ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
       ctx.strokeRect(BAR_X, BAR_Y, BAR_W, BAR_H);
 
-      // Fish block — always draw with outline so it's never invisible
+      // Fish block
       const bx = BAR_X + this.fishX, by = BAR_Y + this.fishY;
-      ctx.fillStyle = following ? '#44ff88' : '#22dd55';
+      // Pulsing outer glow so block is easy to spot
+      const pulse = (Math.sin(Date.now() / 120) + 1) / 2;
+      ctx.strokeStyle = following
+        ? `rgba(100,255,160,${0.35 + pulse * 0.65})`
+        : `rgba(255,160,30,${0.35 + pulse * 0.65})`;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(bx - 4, by - 4, FW + 8, FH + 8);
+      ctx.fillStyle = following ? '#44ff88' : '#ff9900';
       ctx.fillRect(bx, by, FW, FH);
-      ctx.strokeStyle = following ? '#aaffcc' : '#55ee77';
+      ctx.strokeStyle = following ? '#aaffcc' : '#ffcc55';
       ctx.lineWidth = 2;
       ctx.strokeRect(bx, by, FW, FH);
 
@@ -253,9 +274,11 @@ class FishingGame {
       ctx.lineTo(BAR_X + BAR_W + 16, lineAbsY + 7);
       ctx.closePath(); ctx.fill();
 
-      // Instruction
-      ctx.fillStyle = '#ffcc66'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('按住 SPACE 讓線往上，跟著綠色方塊！', cx, BAR_Y + BAR_H + 28);
+      // Instruction — touch version is rendered by touch.js
+      if (!touch.isMobile) {
+        ctx.fillStyle = '#ffcc66'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('按住 SPACE 讓線往上，跟著方塊！', cx, BAR_Y + BAR_H + 28);
+      }
 
     } else if (this.state === 'result') {
       if (this.resOk) {
