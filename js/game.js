@@ -1,7 +1,7 @@
 const game = {
   canvas: null, ctx: null,
-  player: null, shop: null, harbor: null, ocean: null,
-  scene: 'harbor',   // 'harbor' | 'ocean'
+  player: null, shop: null, harbor: null, ocean: null, lake: null,
+  scene: 'harbor',   // 'harbor' | 'ocean' | 'lake'
   keys: {},
   spacePressedThisFrame: false,
   mouse: { x: 400, y: 300 },
@@ -17,6 +17,7 @@ function init() {
   game.shop   = new ShopUI();
   game.harbor = new HarborScene();
   game.ocean  = new OceanScene();
+  game.lake   = new LakeScene();
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup',   e => { game.keys[e.key] = false; });
@@ -69,11 +70,11 @@ function handlePress(key) {
   // ESC
   if (key === 'Escape') {
     if (game.scene === 'ocean') {
-      if (game.ocean.fishing.state) {
-        game.ocean.fishing.cancel(game.player);
-      } else {
-        game.scene = 'harbor';
-      }
+      if (game.ocean.fishing.state) game.ocean.fishing.cancel(game.player);
+      else game.scene = 'harbor';
+    } else if (game.scene === 'lake') {
+      if (game.lake.fishing.state) game.lake.fishing.cancel(game.player);
+      else { game.scene = 'harbor'; game.player.x = 752; game.player.y = 325; }
     }
     return;
   }
@@ -86,11 +87,16 @@ function handlePress(key) {
       if (!n) return;
       if (n.type === 'boat') {
         game.scene = 'ocean';
+      } else if (n.type === 'lake') {
+        game.scene = 'lake';
+        game.player.x = 735; game.player.y = 325;
       } else if (n.type === 'shop') {
         game.shop.show(n.shopType);
       }
     } else if (game.scene === 'ocean') {
       game.ocean.tryFish(game.player);
+    } else if (game.scene === 'lake') {
+      game.lake.tryFish(game.player);
     }
   }
 }
@@ -112,10 +118,11 @@ function update() {
   touch.applyKeys(game.keys);
 
   // Touch action button → space press (cast / bite)
-  if (touch.actionTapped && game.scene === 'ocean') {
-    const fs = game.ocean.fishing.state;
+  if (touch.actionTapped && (game.scene === 'ocean' || game.scene === 'lake')) {
+    const sceneObj = game.scene === 'ocean' ? game.ocean : game.lake;
+    const fs = sceneObj.fishing.state;
     if (!fs) {
-      game.ocean.tryFish(game.player);
+      sceneObj.tryFish(game.player);
     } else if (fs === 'cast' || fs === 'bite') {
       game.spacePressedThisFrame = true;
     }
@@ -134,6 +141,8 @@ function update() {
     game.harbor.update(game.keys, game.player);
   } else if (game.scene === 'ocean') {
     game.ocean.update(game.keys, game.spacePressedThisFrame, game.player);
+  } else if (game.scene === 'lake') {
+    game.lake.update(game.keys, game.spacePressedThisFrame, game.player);
   }
 }
 
@@ -145,6 +154,8 @@ function render() {
     game.harbor.render(ctx, game.player);
   } else if (game.scene === 'ocean') {
     game.ocean.render(ctx, game.player);
+  } else if (game.scene === 'lake') {
+    game.lake.render(ctx, game.player);
   }
 
   if (game.shop.open) {

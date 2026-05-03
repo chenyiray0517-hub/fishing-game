@@ -52,7 +52,9 @@ const touch = {
   _start(e) {
     e.preventDefault();
     const scene = game.scene;
-    const fs    = scene === 'ocean' ? game.ocean.fishing.state : null;
+    const fs    = scene === 'ocean' ? game.ocean.fishing.state
+                : scene === 'lake'  ? game.lake.fishing.state
+                : null;
 
     for (const t of e.changedTouches) {
       const p = this._pos(t);
@@ -69,8 +71,9 @@ const touch = {
         continue;
       }
 
-      // Back-to-harbor button (ocean HUD top-right area)
-      if (scene === 'ocean' && !fs && p.x > CONFIG.W * 0.72 && p.y < 48) {
+      // Back-to-harbor button (ocean/lake HUD top-right area)
+      if ((scene === 'ocean' || scene === 'lake') && !fs && p.x > CONFIG.W * 0.72 && p.y < 48) {
+        if (scene === 'lake') { game.player.x = 752; game.player.y = 325; }
         game.scene = 'harbor';
         continue;
       }
@@ -155,7 +158,9 @@ const touch = {
 
   render(ctx) {
     if (!this.isMobile) return;
-    const fs = game.scene === 'ocean' ? game.ocean.fishing.state : null;
+    const fs = game.scene === 'ocean' ? game.ocean.fishing.state
+             : game.scene === 'lake'  ? game.lake.fishing.state
+             : null;
 
     // During tug: fishing.js handles all tug UI; skip joystick/action btn
     if (fs === 'tug') return;
@@ -163,8 +168,8 @@ const touch = {
     // Joystick: show when not mid-cast (wait is still navigable in harbor)
     if (!fs || fs === 'wait') this._drawJoystick(ctx);
 
-    // Action button: ocean only
-    if (game.scene === 'ocean') this._drawActionBtn(ctx, fs);
+    // Action button: ocean or lake
+    if (game.scene === 'ocean' || game.scene === 'lake') this._drawActionBtn(ctx, fs);
   },
 
   _drawJoystick(ctx) {
@@ -192,7 +197,9 @@ const touch = {
     const blink = Math.floor(Date.now() / 180) % 2;
 
     if (!fs) {
-      const spot = game.ocean.nearbySpot(game.player);
+      const spot = game.scene === 'ocean'
+        ? game.ocean.nearbySpot(game.player)
+        : game.lake.nearbySpot(game.player);
       if (!spot || game.player.baitCount <= 0) return;
       label = '🎣'; bg = 'rgba(30,150,80,0.45)'; fg = '#66ffaa';
     } else if (fs === 'cast') {

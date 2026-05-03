@@ -209,6 +209,103 @@ const sprites = {
       ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(s*1.95,-s*0.25,s*0.14,0,Math.PI*2); ctx.fill();
     },
 
+    // 鯉魚 — round golden body, arched back, barbels, scales
+    carp(ctx, sz, color) {
+      const s = sz;
+      ctx.fillStyle = color; ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(s*1.9, 0);
+      ctx.bezierCurveTo(s*1.9,-s*1.1,-s*1.2,-s*1.0,-s*1.75, 0);
+      ctx.bezierCurveTo(-s*1.2, s*0.9, s*1.9, s*1.1, s*1.9, 0);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*1.75,0); ctx.lineTo(-s*2.7,-s*1.0); ctx.lineTo(-s*2.7,s*1.0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(160,100,15,0.38)'; ctx.lineWidth = s*0.15;
+      for (let i=0; i<3; i++) for (let j=0; j<2; j++) {
+        ctx.beginPath(); ctx.arc(-s*0.55+i*s*0.68, -s*0.18+j*s*0.55, s*0.42, Math.PI*0.12, Math.PI*0.88); ctx.stroke();
+      }
+      ctx.strokeStyle = color; ctx.lineWidth = s*0.16; ctx.lineCap = 'round';
+      [[s*1.8,-s*0.12,s*2.55,-s*0.6],[s*1.8,s*0.12,s*2.55,s*0.45]].forEach(([x1,y1,x2,y2])=>{
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      });
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(-s*0.2,-s*1.0); ctx.lineTo(s*0.5,-s*1.85); ctx.lineTo(s*1.15,-s*1.0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*1.3,-s*0.25,s*0.28,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(s*1.36,-s*0.25,s*0.14,0,Math.PI*2); ctx.fill();
+    },
+
+    // 鱒魚 — streamlined olive green, dark spots, adipose fin
+    trout(ctx, sz, color) {
+      const s = sz;
+      ctx.fillStyle = color; ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(s*2.0, 0);
+      ctx.bezierCurveTo(s*2.0,-s*0.82,-s*1.4,-s*0.92,-s*2.0, 0);
+      ctx.bezierCurveTo(-s*1.4, s*0.92, s*2.0, s*0.82, s*2.0, 0);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*2.0,0); ctx.lineTo(-s*3.05,-s*1.05); ctx.lineTo(-s*2.62,0); ctx.lineTo(-s*3.05,s*1.05); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(30,55,15,0.48)';
+      [[-s*0.2,-s*0.45,s*0.15],[s*0.5,-s*0.36,s*0.13],[s*1.1,-s*0.42,s*0.13],
+       [-s*0.55,s*0.2,s*0.12],[s*0.2,s*0.3,s*0.14],[s*0.88,s*0.2,s*0.11]].forEach(([x,y,r])=>{
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      });
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(-s*1.1,-s*0.8,s*0.22,Math.PI,0); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-s*0.4,-s*0.9); ctx.lineTo(s*0.3,-s*1.68); ctx.lineTo(s*1.0,-s*0.9); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*1.42,-s*0.2,s*0.27,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(s*1.48,-s*0.2,s*0.13,0,Math.PI*2); ctx.fill();
+    },
+
+    // 鰻魚 — long sinuous snake-like body
+    eel(ctx, sz, color) {
+      const s = sz;
+      ctx.strokeStyle = color; ctx.lineWidth = s*0.58; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(s*2.6, 0);
+      ctx.bezierCurveTo(s*1.4,-s*0.52,-s*0.5,s*0.52,-s*1.6, 0);
+      ctx.bezierCurveTo(-s*2.3,-s*0.42,-s*3.1,-s*0.18,-s*3.6, 0.1);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.strokeStyle = 'rgba(210,230,165,0.32)'; ctx.lineWidth = s*0.28;
+      ctx.beginPath();
+      ctx.moveTo(s*2.4, 0.1);
+      ctx.bezierCurveTo(s*1.4,-s*0.24,-s*0.4,s*0.26,-s*1.4, 0.1);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(20,55,20,0.5)'; ctx.lineWidth = s*0.18;
+      ctx.beginPath();
+      ctx.moveTo(s*1.9,-s*0.3);
+      ctx.bezierCurveTo(s*0.5,-s*0.66,-s*0.9,s*0.12,-s*1.9,-s*0.22);
+      ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*2.15,-s*0.14,s*0.24,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(s*2.2,-s*0.14,s*0.12,0,Math.PI*2); ctx.fill();
+    },
+
+    // 巨鯰 — massive head, very long barbels, mottled skin
+    giant_cat(ctx, sz, color) {
+      const s = sz;
+      ctx.fillStyle = color; ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(s*2.5, 0);
+      ctx.bezierCurveTo(s*2.5,-s*1.25,-s*0.8,-s*1.35,-s*2.1, 0);
+      ctx.bezierCurveTo(-s*0.8, s*1.35, s*2.5, s*1.25, s*2.5, 0);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*2.1,0); ctx.lineTo(-s*3.3,-s*1.4); ctx.lineTo(-s*3.3,s*1.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = s*0.24; ctx.lineCap = 'round';
+      [[s*2.4,-s*0.28,s*3.75,-s*1.25],[s*2.5,0,s*3.95,s*0.15],
+       [s*2.4,s*0.28,s*3.75,s*1.25],[s*2.25,-s*0.55,s*3.5,-s*1.9],[s*2.25,s*0.55,s*3.5,s*1.9]].forEach(([x1,y1,x2,y2])=>{
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      });
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(s*0.3,-s*1.35); ctx.lineTo(s*1.0,-s*2.3); ctx.lineTo(s*1.85,-s*1.35); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(80,50,20,0.3)';
+      [[s*0.0,-s*0.2,s*0.46],[s*1.1,s*0.3,s*0.36],[-s*0.8,s*0.45,s*0.3]].forEach(([x,y,r])=>{
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      });
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*1.55,-s*0.42,s*0.34,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(s*1.62,-s*0.42,s*0.17,0,Math.PI*2); ctx.fill();
+    },
+
     // 龍魚 — serpentine gold body, whiskers, ornate fins
     dragon(ctx, sz, color) {
       const s = sz;

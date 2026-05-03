@@ -25,6 +25,8 @@ class HarborScene {
     const bo = this.BOAT;
     const bcx = bo.x+bo.w/2, bcy = bo.y+bo.h/2;
     if (Math.hypot(x-bcx, y-bcy) < 100) return { type:'boat' };
+    // Lake path (right side, below fish market)
+    if (Math.hypot(x - (CONFIG.W - 32), y - 328) < 78) return { type: 'lake' };
     return null;
   }
 
@@ -177,7 +179,9 @@ class HarborScene {
     const n = this.nearby(player);
     if (n) {
       const SHOP_LABELS = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場' };
-      const labelText = n.type === 'boat' ? '出海' : (SHOP_LABELS[n.shopType] || '進入');
+      const labelText = n.type === 'boat' ? '出海'
+                      : n.type === 'lake' ? '前往湖邊'
+                      : (SHOP_LABELS[n.shopType] || '進入');
       const label = touch.isMobile ? `👆 ${labelText}` : `[E] ${labelText}`;
       const tw = ctx.measureText(label).width + 24;
       const bx = player.x - tw / 2, by = player.y - 64;
@@ -191,8 +195,45 @@ class HarborScene {
       touch.clearInteractRect();
     }
 
+    this._renderLakePath(ctx);
     this.renderPlayer(ctx, player);
     this.renderHUD(ctx, player);
+  }
+
+  _renderLakePath(ctx) {
+    const px = 750, py1 = 252, py2 = 405;
+    // Dirt path strip on right edge
+    const pg = ctx.createLinearGradient(px - 20, 0, CONFIG.W, 0);
+    pg.addColorStop(0, '#c0a878'); pg.addColorStop(0.5, '#b8966a'); pg.addColorStop(1, '#b09060');
+    ctx.fillStyle = pg; ctx.fillRect(px - 20, py1, CONFIG.W - (px - 20), py2 - py1);
+    ctx.strokeStyle = '#9a7848'; ctx.lineWidth = 1;
+    for (let y = py1 + 10; y < py2; y += 20) {
+      ctx.beginPath();
+      ctx.moveTo(px - 14, y + Math.sin(y * 0.18) * 3);
+      ctx.lineTo(CONFIG.W, y + Math.sin(y * 0.18 + 1.2) * 3);
+      ctx.stroke();
+    }
+    // Wooden gate posts
+    [[px - 2, py1 + 4], [px - 2, py2 - 32]].forEach(([bpx, bpy]) => {
+      ctx.fillStyle = '#6a4010'; ctx.fillRect(bpx, bpy, 11, 30);
+      ctx.fillStyle = '#8a5820'; ctx.fillRect(bpx - 2, bpy - 5, 15, 9);
+    });
+    ctx.strokeStyle = '#5a3508'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(px + 3, py1 + 28); ctx.lineTo(px + 3, py2 - 10); ctx.stroke();
+    // Tree silhouettes hinting at forest beyond
+    [[CONFIG.W - 12, py1 + 28], [CONFIG.W - 10, py2 - 48]].forEach(([tx, ty]) => {
+      ctx.fillStyle = '#3a6810';
+      ctx.beginPath(); ctx.arc(tx, ty, 20, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#4a3008'; ctx.fillRect(tx - 4, ty + 18, 8, 16);
+    });
+    // Signpost
+    ctx.fillStyle = '#5a3508'; ctx.fillRect(px + 12, py1 + 58, 5, 42);
+    ctx.fillStyle = '#e8d090'; ctx.fillRect(px + 16, py1 + 54, 60, 34);
+    ctx.strokeStyle = '#8a6020'; ctx.lineWidth = 1.5; ctx.strokeRect(px + 16, py1 + 54, 60, 34);
+    ctx.fillStyle = '#3a2010'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('湖邊', px + 46, py1 + 72);
+    ctx.fillStyle = '#cc4422'; ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('→', px + 46, py1 + 88);
   }
 
   renderPlayer(ctx, p) {
