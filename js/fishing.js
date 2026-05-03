@@ -247,11 +247,12 @@ class FishingGame {
 
       // ── Fish block ───────────────────────────────────────────────
       const bx = BAR_X + this.fishX, by = BAR_Y + this.fishY;
+      // Pulsing glow via rgba strokeStyle — never touches globalAlpha
       const pulse = (Math.sin(Date.now() / 120) + 1) / 2;
-      ctx.globalAlpha = 0.35 + pulse * 0.65;
-      ctx.strokeStyle = blockColor; ctx.lineWidth = 5;
-      ctx.strokeRect(bx - 5, by - 5, FW + 10, FH + 10);
-      ctx.globalAlpha = 1;
+      const glowA = (0.35 + pulse * 0.65).toFixed(3);
+      const glowRgb = touch.isMobile ? '68,170,255' : (following ? '68,255,136' : '255,153,0');
+      ctx.strokeStyle = `rgba(${glowRgb},${glowA})`; ctx.lineWidth = 8;
+      ctx.strokeRect(bx - 4, by - 4, FW + 8, FH + 8);
       ctx.fillStyle = blockColor;
       ctx.fillRect(bx, by, FW, FH);
       ctx.strokeStyle = following ? '#ffffff' : '#ffcc55'; ctx.lineWidth = 2;
