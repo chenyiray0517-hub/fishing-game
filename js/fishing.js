@@ -15,11 +15,13 @@ class FishingGame {
     this.resFish  = null;
     this.resT     = 0;
     // Tug minigame
-    this.fishX    = 0;  this.fishY  = 0;
-    this.fishVX   = 2;  this.fishVY = 0.5;
-    this.lineY    = 60; this.lineVY = 0;
-    this.tugTotal = 0;  this.followT = 0;
-    this.tugChangeT = 0;
+    this.fishX       = 0;   this.fishY   = 0;
+    this.fishVX      = 2;   this.fishVY  = 0.5;
+    this.lineY       = 60;  this.lineVY  = 0;
+    this.tugChangeT  = 0;
+    this.tugProgress = 0;   // 0→1, reach 1 to catch
+    this.tugTimeLeft = 10 * 60;  // 10 seconds
+    this.tapCooldown = 0;   // mobile tap cooldown (frames)
   }
 
   start(spot, player) {
@@ -80,10 +82,9 @@ class FishingGame {
     } else if (this.state === 'tug') {
       const BAR_W = 520, BAR_H = 120;
       const FW = 80, FH = 40;
-      const TUG_FRAMES    = 15 * 60; // 15 seconds
-      const FOLLOW_NEEDED =  6 * 60; // need 6 seconds overlap
 
-      this.tugTotal++;
+      // ── Timer ────────────────────────────────────────────────────
+      this.tugTimeLeft = Math.max(0, this.tugTimeLeft - 1);
 
       // ── Fish block movement ──────────────────────────────────────
       this.fishX += this.fishVX;
@@ -93,7 +94,7 @@ class FishingGame {
       if (this.fishY < 0)          { this.fishY = 0;          this.fishVY =  Math.abs(this.fishVY); }
       if (this.fishY > BAR_H - FH) { this.fishY = BAR_H - FH; this.fishVY = -Math.abs(this.fishVY); }
 
-      // Random velocity kick — harder fish change more often
+      // Random velocity kick
       this.tugChangeT++;
       const period = Math.max(40, 100 - this.tugFish.difficulty * 12);
       if (this.tugChangeT >= period) {
@@ -101,43 +102,48 @@ class FishingGame {
         const sp = 1.5 + this.tugFish.difficulty * 0.4;
         this.fishVX = (Math.random() - 0.5) * sp * 2.5;
         this.fishVY = (Math.random() - 0.5) * sp * 1.2;
-        // Re-clamp after velocity kick so new direction takes effect next frame cleanly
         if (this.fishX <= 0 && this.fishVX < 0)          this.fishVX =  Math.abs(this.fishVX);
         if (this.fishX >= BAR_W - FW && this.fishVX > 0)  this.fishVX = -Math.abs(this.fishVX);
         if (this.fishY <= 0 && this.fishVY < 0)           this.fishVY =  Math.abs(this.fishVY);
         if (this.fishY >= BAR_H - FH && this.fishVY > 0)  this.fishVY = -Math.abs(this.fishVY);
       }
-      // Ensure fish never stops — guarantee minimum speed
       const minSpd = 0.6;
       if (Math.abs(this.fishVX) < minSpd) this.fishVX = this.fishVX < 0 ? -minSpd : minSpd;
       if (Math.abs(this.fishVY) < minSpd * 0.5) this.fishVY = this.fishVY < 0 ? -minSpd * 0.5 : minSpd * 0.5;
 
-      // ── Player line physics ──────────────────────────────────────
-      if (touch.tugY !== null) {
-        // Touch: map full screen height directly to bar height
-        const target = Math.max(0, Math.min(BAR_H, (touch.tugY / CONFIG.H) * BAR_H));
-        this.lineY  += (target - this.lineY) * 0.28;
-        this.lineVY  = 0;
+      // ── Progress mechanic ────────────────────────────────────────
+      if (touch.isMobile) {
+        // Mobile: tap screen to add progress (with cooldown between taps)
+        if (this.tapCooldown > 0) this.tapCooldown--;
+        if (touch.tugTapped && this.tapCooldown <= 0) {
+          const gain = Math.max(0.045, 0.10 - this.tugFish.difficulty * 0.008);
+          this.tugProgress = Math.min(1, this.tugProgress + gain);
+          this.tapCooldown = 22; // ~0.37 s at 60 fps
+        }
+        // Slow decay keeps pressure up
+        this.tugProgress = Math.max(0, this.tugProgress - 0.0006);
       } else {
-        if (keys[' '] || keys['Space']) this.lineVY -= 0.8;
-        this.lineVY += 0.3;
-        this.lineVY *= 0.92;
-        this.lineY  += this.lineVY;
-      }
-      if (this.lineY < 0)     { this.lineY = 0;     this.lineVY = 0; }
-      if (this.lineY > BAR_H) { this.lineY = BAR_H; this.lineVY = 0; }
+        // Desktop: mouse Y controls line, overlap with fish block fills progress
+        const BAR_Y_abs = CONFIG.H / 2 - BAR_H / 2;
+        const targetY = Math.max(0, Math.min(BAR_H, game.mouse.y - BAR_Y_abs));
+        this.lineY  += (targetY - this.lineY) * 0.30;
+        this.lineY   = Math.max(0, Math.min(BAR_H, this.lineY));
+        this.lineVY  = 0;
 
-      // ── Overlap: line Y inside fish block Y range ────────────────
-      if (this.lineY >= this.fishY && this.lineY <= this.fishY + FH) {
-        this.followT++;
+        const following = this.lineY >= this.fishY && this.lineY <= this.fishY + FH;
+        if (following) {
+          this.tugProgress = Math.min(1, this.tugProgress + 1 / (4 * 60)); // fill in ~4 s of tracking
+        } else {
+          this.tugProgress = Math.max(0, this.tugProgress - 1 / (9 * 60)); // drain in ~9 s off target
+        }
       }
 
       // ── Win / lose ───────────────────────────────────────────────
-      if (this.followT >= FOLLOW_NEEDED) {
+      if (this.tugProgress >= 1) {
         player.catchFish(this.tugFish);
         this.state = 'result'; this.resOk = true;
         this.resFish = this.tugFish; this.resT = 160;
-      } else if (this.tugTotal >= TUG_FRAMES) {
+      } else if (this.tugTimeLeft <= 0) {
         this.state = 'result'; this.resOk = false;
         this.resFish = this.tugFish; this.resT = 120;
       }
@@ -201,109 +207,85 @@ class FishingGame {
       const BAR_W = 520, BAR_H = 120;
       const FW = 80, FH = 40;
       const BAR_X = cx - BAR_W/2, BAR_Y = cy - BAR_H/2;
-      const TUG_FRAMES    = 15 * 60;
-      const FOLLOW_NEEDED =  6 * 60;
-      const following = this.lineY >= this.fishY && this.lineY <= this.fishY + FH;
-      const blockColor = following ? '#44ff88' : '#ff9900';
 
       // Fish name
       ctx.fillStyle = f.color; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(f.name, cx, BAR_Y - 52);
+      ctx.fillText(f.name, cx, BAR_Y - 80);
 
-      // ── Two info bars above the main bar ────────────────────────
-      const infoW = BAR_W, infoH = 14;
-      const infoX = BAR_X;
+      // Labels row
+      const secsLeft = Math.ceil(this.tugTimeLeft / 60);
+      const timeFrac = this.tugTimeLeft / (10 * 60);
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillStyle = '#88ffaa'; ctx.textAlign = 'left';
+      ctx.fillText('🎣 釣魚進度', BAR_X, BAR_Y - 52);
+      ctx.fillStyle = timeFrac < 0.34 ? '#ff6644' : '#aaddff';
+      ctx.textAlign = 'right';
+      ctx.fillText(`⏱ 剩餘 ${secsLeft} 秒`, BAR_X + BAR_W, BAR_Y - 52);
 
-      // Bar 1: game time countdown  (top)
-      const infoY1 = BAR_Y - 34;
+      // Progress bar
+      const progY = BAR_Y - 46, progH = 24;
       ctx.fillStyle = '#0a1a2e';
-      ctx.fillRect(infoX, infoY1, infoW, infoH);
-      const timePct = Math.max(0, (TUG_FRAMES - this.tugTotal) / TUG_FRAMES);
-      ctx.fillStyle = timePct < 0.34 ? '#ff6644' : '#3a6aaa';
-      ctx.fillRect(infoX, infoY1, infoW * timePct, infoH);
-      ctx.strokeStyle = '#3a6aaa'; ctx.lineWidth = 1;
-      ctx.strokeRect(infoX, infoY1, infoW, infoH);
-      const remaining = Math.ceil(Math.max(0, TUG_FRAMES - this.tugTotal) / 60);
-      ctx.fillStyle = timePct < 0.34 ? '#ff8866' : '#aaddff';
-      ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(`⏱ 剩餘時間  ${remaining} 秒`, infoX + 4, infoY1 - 3);
+      ctx.fillRect(BAR_X, progY, BAR_W, progH);
+      const progPct = this.tugProgress;
+      const progCol = progPct > 0.75 ? '#44ff88' : progPct > 0.4 ? '#88cc44' : '#22aa55';
+      ctx.fillStyle = progCol;
+      ctx.fillRect(BAR_X, progY, BAR_W * progPct, progH);
+      ctx.strokeStyle = '#3a8a5a'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(BAR_X, progY, BAR_W, progH);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(`${Math.round(progPct * 100)}%`, cx, progY + progH - 6);
 
-      // Bar 2: follow progress  (below bar 1)
-      const infoY2 = BAR_Y - 14;
-      ctx.fillStyle = '#0a1a2e';
-      ctx.fillRect(infoX, infoY2, infoW, infoH);
-      const followPct = Math.min(1, this.followT / FOLLOW_NEEDED);
-      ctx.fillStyle = followPct > 0.8 ? '#44ff88' : followPct > 0.4 ? '#88cc44' : '#22aa44';
-      ctx.fillRect(infoX, infoY2, infoW * followPct, infoH);
-      ctx.strokeStyle = '#3a6aaa'; ctx.lineWidth = 1;
-      ctx.strokeRect(infoX, infoY2, infoW, infoH);
-      const followSec = Math.min(6, this.followT / 60);
-      ctx.fillStyle = '#88ff88';
-      ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(`🎣 跟釣進度  ${followSec.toFixed(1)} / 6.0 秒`, infoX + 4, infoY2 - 3);
-
-      // Main bar background
+      // Main 2D area
       ctx.fillStyle = '#081828';
       ctx.strokeStyle = '#3a6aaa'; ctx.lineWidth = 2;
       ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
       ctx.strokeRect(BAR_X, BAR_Y, BAR_W, BAR_H);
 
+      // Following: desktop only (line overlaps fish block Y range)
+      const following = !touch.isMobile && this.lineY >= this.fishY && this.lineY <= this.fishY + FH;
+      const blockColor = touch.isMobile ? '#44aaff' : (following ? '#44ff88' : '#ff9900');
+
       // ── Fish block ───────────────────────────────────────────────
       const bx = BAR_X + this.fishX, by = BAR_Y + this.fishY;
-
-      // Pulsing outer glow
       const pulse = (Math.sin(Date.now() / 120) + 1) / 2;
       ctx.globalAlpha = 0.35 + pulse * 0.65;
-      ctx.strokeStyle = blockColor;
-      ctx.lineWidth = 5;
+      ctx.strokeStyle = blockColor; ctx.lineWidth = 5;
       ctx.strokeRect(bx - 5, by - 5, FW + 10, FH + 10);
-
-      // Solid fill — always opaque
       ctx.globalAlpha = 1;
       ctx.fillStyle = blockColor;
       ctx.fillRect(bx, by, FW, FH);
-      ctx.strokeStyle = following ? '#ffffff' : '#ffcc55';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = following ? '#ffffff' : '#ffcc55'; ctx.lineWidth = 2;
       ctx.strokeRect(bx, by, FW, FH);
 
-      // Edge indicators: small triangles on bar borders pointing at the fish
-      // (always visible even if the block is somehow hard to see)
-      const fishMidX = bx + FW / 2;
-      const fishMidY = by + FH / 2;
+      // Edge arrows pointing at fish block
+      const fishMidX = bx + FW / 2, fishMidY = by + FH / 2;
       ctx.fillStyle = blockColor;
-      // Top edge arrow ↓
       ctx.beginPath();
-      ctx.moveTo(fishMidX - 7, BAR_Y + 1);
-      ctx.lineTo(fishMidX + 7, BAR_Y + 1);
-      ctx.lineTo(fishMidX,     BAR_Y + 11);
+      ctx.moveTo(fishMidX - 7, BAR_Y + 1); ctx.lineTo(fishMidX + 7, BAR_Y + 1); ctx.lineTo(fishMidX, BAR_Y + 11);
       ctx.closePath(); ctx.fill();
-      // Right edge arrow ←
       ctx.beginPath();
-      ctx.moveTo(BAR_X + BAR_W - 1,  fishMidY - 7);
-      ctx.lineTo(BAR_X + BAR_W - 1,  fishMidY + 7);
-      ctx.lineTo(BAR_X + BAR_W - 12, fishMidY);
+      ctx.moveTo(BAR_X + BAR_W - 1, fishMidY - 7); ctx.lineTo(BAR_X + BAR_W - 1, fishMidY + 7); ctx.lineTo(BAR_X + BAR_W - 12, fishMidY);
       ctx.closePath(); ctx.fill();
 
-      // Player line (horizontal, full bar width)
-      const lineAbsY = BAR_Y + this.lineY;
-      ctx.strokeStyle = following ? '#ffff44' : '#ffffff';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(BAR_X + 4, lineAbsY);
-      ctx.lineTo(BAR_X + BAR_W - 4, lineAbsY);
-      ctx.stroke();
-      // Arrow on right edge
-      ctx.fillStyle = following ? '#ffff44' : '#dddddd';
-      ctx.beginPath();
-      ctx.moveTo(BAR_X + BAR_W + 4,  lineAbsY);
-      ctx.lineTo(BAR_X + BAR_W + 16, lineAbsY - 7);
-      ctx.lineTo(BAR_X + BAR_W + 16, lineAbsY + 7);
-      ctx.closePath(); ctx.fill();
-
-      // Instruction — touch version is rendered by touch.js
+      // ── Desktop: horizontal line controlled by mouse ─────────────
       if (!touch.isMobile) {
+        const lineAbsY = BAR_Y + this.lineY;
+        ctx.strokeStyle = following ? '#ffff44' : '#ffffff'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(BAR_X + 4, lineAbsY); ctx.lineTo(BAR_X + BAR_W - 4, lineAbsY);
+        ctx.stroke();
+        ctx.fillStyle = following ? '#ffff44' : '#dddddd';
+        ctx.beginPath();
+        ctx.moveTo(BAR_X + BAR_W + 4,  lineAbsY);
+        ctx.lineTo(BAR_X + BAR_W + 16, lineAbsY - 7);
+        ctx.lineTo(BAR_X + BAR_W + 16, lineAbsY + 7);
+        ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#ffcc66'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('按住 SPACE 讓線往上，跟著方塊！', cx, BAR_Y + BAR_H + 28);
+        ctx.fillText('移動滑鼠讓釣線對準方塊，填滿進度！', cx, BAR_Y + BAR_H + 28);
+      } else {
+        ctx.fillStyle = this.tapCooldown > 0 ? 'rgba(255,200,80,0.9)' : '#aaddff';
+        ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(this.tapCooldown > 0 ? '冷卻中...' : '點擊螢幕填進度！', cx, BAR_Y + BAR_H + 28);
       }
 
       ctx.restore(); // end of tug isolation

@@ -4,6 +4,7 @@ const game = {
   scene: 'harbor',   // 'harbor' | 'ocean'
   keys: {},
   spacePressedThisFrame: false,
+  mouse: { x: 400, y: 300 },
 };
 
 function init() {
@@ -23,6 +24,12 @@ function init() {
   touch.init(game.canvas);
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
+
+  game.canvas.addEventListener('mousemove', e => {
+    const r = game.canvas.getBoundingClientRect();
+    game.mouse.x = (e.clientX - r.left) * CONFIG.W / r.width;
+    game.mouse.y = (e.clientY - r.top)  * CONFIG.H / r.height;
+  });
 
   requestAnimationFrame(loop);
 }

@@ -17,9 +17,8 @@ const touch = {
   actionHeld: false,
   actionId:   null,
 
-  // Tug drag — canvas Y of finger
-  tugY:  null,
-  tugId: null,
+  // Tug tap (per-frame, cleared after each loop)
+  tugTapped: false,
 
   // Interact button bounding rect (set by harbor render each frame)
   _iRect: null,
@@ -64,10 +63,9 @@ const touch = {
         continue;
       }
 
-      // Tug minigame — whole screen is the drag zone
+      // Tug minigame — any tap counts
       if (fs === 'tug') {
-        this.tugY  = p.y;
-        this.tugId = t.identifier;
+        this.tugTapped = true;
         continue;
       }
 
@@ -117,7 +115,6 @@ const touch = {
         j.dx = d > 8 ? Math.max(-1, Math.min(1, dx / max)) : 0;
         j.dy = d > 8 ? Math.max(-1, Math.min(1, dy / max)) : 0;
       }
-      if (t.identifier === this.tugId) this.tugY = p.y;
     }
   },
 
@@ -130,9 +127,6 @@ const touch = {
       }
       if (t.identifier === this.actionId) {
         this.actionHeld = false; this.actionId = null;
-      }
-      if (t.identifier === this.tugId) {
-        this.tugY = null; this.tugId = null;
       }
     }
   },
@@ -154,6 +148,7 @@ const touch = {
     this.actionTapped   = false;
     this.interactTapped = false;
     this.shopTap        = null;
+    this.tugTapped      = false;
   },
 
   // ── Rendering ────────────────────────────────────────────────────────
@@ -162,25 +157,8 @@ const touch = {
     if (!this.isMobile) return;
     const fs = game.scene === 'ocean' ? game.ocean.fishing.state : null;
 
-    // During tug: show finger position as dashed line + hint
-    if (fs === 'tug') {
-      if (this.tugY !== null) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255,255,100,0.4)';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([10, 8]);
-        ctx.beginPath();
-        ctx.moveTo(0, this.tugY);
-        ctx.lineTo(CONFIG.W, this.tugY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
-      }
-      ctx.fillStyle = 'rgba(255,255,150,0.5)';
-      ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('☝ 滑動螢幕控制釣線', CONFIG.W / 2, CONFIG.H - 16);
-      return;
-    }
+    // During tug: fishing.js handles all tug UI; skip joystick/action btn
+    if (fs === 'tug') return;
 
     // Joystick: show when not mid-cast (wait is still navigable in harbor)
     if (!fs || fs === 'wait') this._drawJoystick(ctx);
