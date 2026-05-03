@@ -215,12 +215,11 @@ class HarborScene {
     } else {
       ctx.fillRect(x-4,y-h+7,3,3);
     }
-    // Rod (if equipped, show small rod)
-    ctx.strokeStyle='#8B6914'; ctx.lineWidth=2;
+    // Rod sprite in player's hand
     if (dir==='right'||dir==='down') {
-      ctx.beginPath(); ctx.moveTo(x+w/2,y-h+18); ctx.lineTo(x+w/2+16,y-h-4); ctx.stroke();
+      sprites.rod(ctx, p.equippedRod, x+w/2, y-h+18, x+w/2+28, y-h-10);
     } else {
-      ctx.beginPath(); ctx.moveTo(x-w/2,y-h+18); ctx.lineTo(x-w/2-16,y-h-4); ctx.stroke();
+      sprites.rod(ctx, p.equippedRod, x-w/2, y-h+18, x-w/2-28, y-h-10);
     }
   }
 

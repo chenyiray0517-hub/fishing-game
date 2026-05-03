@@ -266,9 +266,7 @@ class FishingGame {
         const glowA = (0.35 + pulse * 0.65).toFixed(3);
         ctx.strokeStyle = `rgba(${following ? '68,255,136' : '255,153,0'},${glowA})`; ctx.lineWidth = 8;
         ctx.strokeRect(bx - 4, by - 4, FW + 8, FH + 8);
-        ctx.fillStyle = blockColor; ctx.fillRect(bx, by, FW, FH);
-        ctx.strokeStyle = following ? '#ffffff' : '#ffcc55'; ctx.lineWidth = 2;
-        ctx.strokeRect(bx, by, FW, FH);
+        sprites.fish(ctx, f.id, bx + FW/2, by + FH/2, f.sz * 0.85, blockColor, this.fishVX >= 0 ? 1 : -1);
 
         const fishMidX = bx + FW/2, fishMidY = by + FH/2;
         ctx.fillStyle = blockColor;
@@ -297,11 +295,13 @@ class FishingGame {
       if (this.resOk) {
         const alpha = Math.min(1, this.resT/30);
         ctx.fillStyle=`rgba(50,220,100,${alpha})`; ctx.font='bold 30px sans-serif'; ctx.textAlign='center';
-        ctx.fillText('釣到了！', cx, cy-18);
-        ctx.fillStyle=this.resFish.color; ctx.font='bold 24px sans-serif';
-        ctx.fillText(this.resFish.name, cx, cy+18);
+        ctx.fillText('釣到了！', cx, cy-60);
+        sprites.fish(ctx, this.resFish.id, cx, cy - 10, this.resFish.sz * 2.2, this.resFish.color);
+        ctx.fillStyle=this.resFish.color; ctx.font='bold 24px sans-serif'; ctx.globalAlpha=alpha;
+        ctx.fillText(this.resFish.name, cx, cy+40);
         ctx.fillStyle='#ffdd55'; ctx.font='20px sans-serif';
-        ctx.fillText(`+$${this.resFish.value}`, cx, cy+50);
+        ctx.fillText(`+$${this.resFish.value}`, cx, cy+72);
+        ctx.globalAlpha=1;
       } else {
         ctx.fillStyle='rgba(220,70,50,0.9)'; ctx.font='bold 30px sans-serif'; ctx.textAlign='center';
         ctx.fillText('魚跑掉了！', cx, cy);
