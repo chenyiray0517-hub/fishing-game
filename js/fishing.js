@@ -193,6 +193,10 @@ class FishingGame {
       ctx.fillRect(cx-100*pct, cy+58, 200*pct, 10);
 
     } else if (this.state === 'tug') {
+      ctx.save(); // isolate all tug rendering — prevents any stray ctx state from outside
+      ctx.globalAlpha = 1;
+      ctx.setLineDash([]);
+
       const f = this.tugFish;
       const BAR_W = 520, BAR_H = 120;
       const FW = 80, FH = 40;
@@ -200,6 +204,7 @@ class FishingGame {
       const TUG_FRAMES    = 15 * 60;
       const FOLLOW_NEEDED =  6 * 60;
       const following = this.lineY >= this.fishY && this.lineY <= this.fishY + FH;
+      const blockColor = following ? '#44ff88' : '#ff9900';
 
       // Fish name
       ctx.fillStyle = f.color; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
@@ -243,20 +248,41 @@ class FishingGame {
       ctx.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H);
       ctx.strokeRect(BAR_X, BAR_Y, BAR_W, BAR_H);
 
-      // Fish block
+      // ── Fish block ───────────────────────────────────────────────
       const bx = BAR_X + this.fishX, by = BAR_Y + this.fishY;
-      // Pulsing outer glow so block is easy to spot
+
+      // Pulsing outer glow
       const pulse = (Math.sin(Date.now() / 120) + 1) / 2;
-      ctx.strokeStyle = following
-        ? `rgba(100,255,160,${0.35 + pulse * 0.65})`
-        : `rgba(255,160,30,${0.35 + pulse * 0.65})`;
-      ctx.lineWidth = 4;
-      ctx.strokeRect(bx - 4, by - 4, FW + 8, FH + 8);
-      ctx.fillStyle = following ? '#44ff88' : '#ff9900';
+      ctx.globalAlpha = 0.35 + pulse * 0.65;
+      ctx.strokeStyle = blockColor;
+      ctx.lineWidth = 5;
+      ctx.strokeRect(bx - 5, by - 5, FW + 10, FH + 10);
+
+      // Solid fill — always opaque
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = blockColor;
       ctx.fillRect(bx, by, FW, FH);
-      ctx.strokeStyle = following ? '#aaffcc' : '#ffcc55';
+      ctx.strokeStyle = following ? '#ffffff' : '#ffcc55';
       ctx.lineWidth = 2;
       ctx.strokeRect(bx, by, FW, FH);
+
+      // Edge indicators: small triangles on bar borders pointing at the fish
+      // (always visible even if the block is somehow hard to see)
+      const fishMidX = bx + FW / 2;
+      const fishMidY = by + FH / 2;
+      ctx.fillStyle = blockColor;
+      // Top edge arrow ↓
+      ctx.beginPath();
+      ctx.moveTo(fishMidX - 7, BAR_Y + 1);
+      ctx.lineTo(fishMidX + 7, BAR_Y + 1);
+      ctx.lineTo(fishMidX,     BAR_Y + 11);
+      ctx.closePath(); ctx.fill();
+      // Right edge arrow ←
+      ctx.beginPath();
+      ctx.moveTo(BAR_X + BAR_W - 1,  fishMidY - 7);
+      ctx.lineTo(BAR_X + BAR_W - 1,  fishMidY + 7);
+      ctx.lineTo(BAR_X + BAR_W - 12, fishMidY);
+      ctx.closePath(); ctx.fill();
 
       // Player line (horizontal, full bar width)
       const lineAbsY = BAR_Y + this.lineY;
@@ -279,6 +305,8 @@ class FishingGame {
         ctx.fillStyle = '#ffcc66'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText('按住 SPACE 讓線往上，跟著方塊！', cx, BAR_Y + BAR_H + 28);
       }
+
+      ctx.restore(); // end of tug isolation
 
     } else if (this.state === 'result') {
       if (this.resOk) {
