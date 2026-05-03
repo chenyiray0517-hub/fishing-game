@@ -4,10 +4,13 @@ const CONFIG = {
   BOAT_SPEED: 2.5,
 
   RODS: [
-    { id: 'wood',   name: '木製釣竿', price: 0,    power: 1.0, lineLen: 180 },
-    { id: 'iron',   name: '鐵製釣竿', price: 280,  power: 1.5, lineLen: 220 },
-    { id: 'carbon', name: '碳纖釣竿', price: 700,  power: 2.2, lineLen: 270 },
-    { id: 'master', name: '大師釣竿', price: 1800, power: 3.2, lineLen: 340 },
+    { id: 'wood',   name: '木製釣竿', price: 0,     power: 1.0, lineLen: 180 },
+    { id: 'iron',   name: '鐵製釣竿', price: 280,   power: 1.5, lineLen: 220 },
+    { id: 'carbon', name: '碳纖釣竿', price: 700,   power: 2.2, lineLen: 270 },
+    { id: 'master', name: '大師釣竿', price: 1800,  power: 3.2, lineLen: 340 },
+    { id: 'legend', name: '傳說釣竿', price: 4500,  power: 4.5, lineLen: 420 },
+    { id: 'deep',   name: '深海釣竿', price: 9800,  power: 6.0, lineLen: 520 },
+    { id: 'divine', name: '神器釣竿', price: 24000, power: 8.5, lineLen: 660 },
   ],
 
   BAITS: [
@@ -24,18 +27,22 @@ const CONFIG = {
 
   FISH: [
     { id: 'sardine',   name: '沙丁魚', value: 12,  color: '#87ceeb', difficulty: 0.7, sz: 12 },
+    { id: 'catfish',   name: '鯰魚',   value: 22,  color: '#7a6040', difficulty: 1.0, sz: 14 },
     { id: 'bass',      name: '鱸魚',   value: 45,  color: '#5580a0', difficulty: 1.5, sz: 16 },
+    { id: 'flounder',  name: '比目魚', value: 68,  color: '#a08060', difficulty: 2.0, sz: 18 },
+    { id: 'octopus',   name: '章魚',   value: 96,  color: '#9966aa', difficulty: 2.8, sz: 18 },
     { id: 'tuna',      name: '鮪魚',   value: 110, color: '#204070', difficulty: 2.6, sz: 20 },
     { id: 'swordfish', name: '旗魚',   value: 240, color: '#3355bb', difficulty: 3.8, sz: 24 },
+    { id: 'shark',     name: '鯊魚',   value: 360, color: '#607080', difficulty: 4.5, sz: 26 },
     { id: 'dragon',    name: '龍魚',   value: 780, color: '#ffd700', difficulty: 5.2, sz: 30 },
   ],
 
   SPOTS: [
-    { x: 175, y: 145, r: 40, name: '淺灘',    fish: ['sardine','bass'],                biteTime:[2,5]  },
-    { x: 530, y: 115, r: 38, name: '礁石區',   fish: ['sardine','bass','tuna'],         biteTime:[3,7]  },
-    { x: 690, y: 290, r: 45, name: '深水區',   fish: ['bass','tuna','swordfish'],       biteTime:[4,9]  },
-    { x: 120, y: 430, r: 35, name: '暗礁',     fish: ['bass','tuna'],                  biteTime:[3,8]  },
-    { x: 430, y: 460, r: 52, name: '神秘深淵', fish: ['tuna','swordfish','dragon'],     biteTime:[6,12] },
+    { x: 175, y: 145, r: 40, name: '淺灘',    fish: ['sardine','catfish','bass'],                 biteTime:[2,5]  },
+    { x: 530, y: 115, r: 38, name: '礁石區',   fish: ['sardine','bass','flounder','octopus'],      biteTime:[3,7]  },
+    { x: 690, y: 290, r: 45, name: '深水區',   fish: ['bass','tuna','swordfish','shark'],          biteTime:[4,9]  },
+    { x: 120, y: 430, r: 35, name: '暗礁',     fish: ['catfish','bass','tuna','flounder'],         biteTime:[3,8]  },
+    { x: 430, y: 460, r: 52, name: '神秘深淵', fish: ['tuna','swordfish','shark','dragon'],        biteTime:[6,12] },
   ],
 
   START_MONEY: 150,

@@ -3,22 +3,33 @@ class ShopUI {
     this.open = false;
     this.type = null;
     this.sel  = 0;
+    this.scrollTop = 0;
     this.msg  = null;
     this.msgT = 0;
   }
 
-  show(type) { this.open = true; this.type = type; this.sel = 0; this.msg = null; }
+  show(type) { this.open = true; this.type = type; this.sel = 0; this.scrollTop = 0; this.msg = null; }
   close()    { this.open = false; this.type = null; }
   notify(text, ok=true) { this.msg = { text, ok }; this.msgT = 130; }
 
   update() { if (this.msgT > 0) this.msgT--; }
 
+  // Keep sel visible within the scrollable window
+  _ensureVisible(total) {
+    const vis = this._visCount();
+    if (this.sel < this.scrollTop) this.scrollTop = this.sel;
+    else if (this.sel >= this.scrollTop + vis) this.scrollTop = this.sel - vis + 1;
+    this.scrollTop = Math.max(0, Math.min(this.scrollTop, Math.max(0, total - vis)));
+  }
+
+  _visCount() { return 7; }
+
   handleKey(key, player) {
     if (!this.open) return false;
     const items = this.items(player);
     if (key === 'Escape' || key === 'e' || key === 'E') { this.close(); return true; }
-    if (key === 'ArrowUp')   { this.sel = Math.max(0, this.sel-1); return true; }
-    if (key === 'ArrowDown') { this.sel = Math.min(items.length-1, this.sel+1); return true; }
+    if (key === 'ArrowUp')   { this.sel = Math.max(0, this.sel-1); this._ensureVisible(items.length); return true; }
+    if (key === 'ArrowDown') { this.sel = Math.min(items.length-1, this.sel+1); this._ensureVisible(items.length); return true; }
     if (key === 'Enter') { this.act(player, items[this.sel]); return true; }
     return true;
   }
@@ -26,14 +37,21 @@ class ShopUI {
   items(player) {
     switch (this.type) {
       case 'rod':
-        return CONFIG.RODS.slice(1).map(r => ({
-          label:   r.name,
-          sub:     player.ownedRods.includes(r.id) ? (player.equippedRod===r.id ? '[裝備中]' : '[已擁有]') : `$${r.price}`,
-          hint:    `力道 ${r.power}  射程 ${r.lineLen}`,
-          owned:   player.ownedRods.includes(r.id),
-          equipped:player.equippedRod === r.id,
-          data: r,
-        }));
+        return CONFIG.RODS.slice(1).map((r, i) => {
+          const prevRod = CONFIG.RODS[i]; // rod at absolute index i is the prerequisite
+          const locked  = !player.ownedRods.includes(prevRod.id);
+          return {
+            label:    r.name,
+            sub:      player.ownedRods.includes(r.id)
+                        ? (player.equippedRod === r.id ? '[裝備中]' : '[已擁有]')
+                        : locked ? '🔒' : `$${r.price}`,
+            hint:     locked ? `需先購買 ${prevRod.name}` : `力道 ${r.power}  射程 ${r.lineLen}`,
+            owned:    player.ownedRods.includes(r.id),
+            equipped: player.equippedRod === r.id,
+            locked,
+            data: r,
+          };
+        });
 
       case 'bait':
         return CONFIG.BAITS.map(b => {
@@ -82,7 +100,8 @@ class ShopUI {
     if (this.type === 'rod') {
       const r = item.data;
       if (item.equipped) { this.notify('已裝備中'); return; }
-      if (item.owned) { player.equippedRod = r.id; player.save(); this.notify(`裝備 ${r.name}`); return; }
+      if (item.owned)    { player.equippedRod = r.id; player.save(); this.notify(`裝備 ${r.name}`); return; }
+      if (item.locked)   { this.notify('需先購買前一階釣竿！', false); return; }
       if (player.money < r.price) { this.notify('金幣不足！', false); return; }
       player.money -= r.price; player.ownedRods.push(r.id); player.equippedRod = r.id;
       player.save(); this.notify(`購買 ${r.name}！`);
@@ -109,27 +128,31 @@ class ShopUI {
 
     } else if (this.type === 'market') {
       if (item.data === 'sell_all') {
-        const { earned, count } = player.sellAll(); // sellAll calls save internally
+        const { earned, count } = player.sellAll();
         this.notify(count > 0 ? `賣出 ${count} 條魚，獲得 $${earned}！` : '沒有魚', count>0);
-        this.sel = 0;
+        this.sel = 0; this.scrollTop = 0;
       }
     }
   }
 
   handleTouch(p) {
     if (!p) return;
-    const W = 500, H = 440, cx = CONFIG.W/2, cy = CONFIG.H/2;
+    const W = 500, H = 520, cx = CONFIG.W/2, cy = CONFIG.H/2;
     const x = cx - W/2, y = cy - H/2;
 
-    // Close button (top-right of modal)
+    // Close button
     if (Math.hypot(p.x - (x + W - 22), p.y - (y + 22)) < 26) {
       this.close(); return;
     }
 
-    const items = this.items(game.player);
-    const iH = 68, listY = y + 56;
-    for (let i = 0; i < items.length; i++) {
-      const iy = listY + i * iH;
+    const items   = this.items(game.player);
+    const iH = 62, listY = y + 56;
+    const vis = this._visCount();
+
+    for (let vi = 0; vi < vis; vi++) {
+      const i  = vi + this.scrollTop;
+      if (i >= items.length) break;
+      const iy = listY + vi * iH;
       if (p.x >= x + 8 && p.x <= x + W - 8 && p.y >= iy && p.y <= iy + iH) {
         this.sel = i;
         this.act(game.player, items[i]);
@@ -140,7 +163,7 @@ class ShopUI {
 
   render(ctx, player) {
     if (!this.open) return;
-    const W = 500, H = 440, cx = CONFIG.W/2, cy = CONFIG.H/2;
+    const W = 500, H = 520, cx = CONFIG.W/2, cy = CONFIG.H/2;
     const x = cx - W/2, y = cy - H/2;
 
     ctx.fillStyle = 'rgba(0,0,0,0.72)';
@@ -164,31 +187,59 @@ class ShopUI {
     ctx.strokeStyle = '#2a4a7a'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x+20, y+46); ctx.lineTo(x+W-20, y+46); ctx.stroke();
 
-    const items = this.items(player);
-    const iH = 68, listY = y + 56;
+    const items  = this.items(player);
+    const iH = 62, listY = y + 56;
+    const vis    = this._visCount();
+    const startI = this.scrollTop;
+    const endI   = Math.min(items.length, startI + vis);
 
-    items.forEach((item, i) => {
-      const iy = listY + i * iH;
+    // Scroll up indicator
+    if (startI > 0) {
+      ctx.fillStyle = 'rgba(100,160,255,0.65)';
+      ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('▲', cx, listY - 8);
+    }
+
+    for (let vi = 0; vi < endI - startI; vi++) {
+      const i  = vi + startI;
+      const item = items[i];
+      const iy = listY + vi * iH;
+
       if (i === this.sel) {
         ctx.fillStyle = 'rgba(58,106,170,0.35)';
         ctx.fillRect(x+8, iy+2, W-16, iH-4);
       }
+
+      const locked = !!item.locked;
       ctx.textAlign = 'left';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.fillStyle = item.equipped ? '#ffd700' : item.owned ? '#88ff88' : item.full ? '#888' : '#ddeeff';
-      ctx.fillText(item.label, x+22, iy+24);
-      ctx.font = '13px sans-serif';
-      ctx.fillStyle = '#8899aa';
-      if (item.hint) ctx.fillText(item.hint, x+22, iy+44);
-      ctx.textAlign = 'right';
       ctx.font = 'bold 15px sans-serif';
-      ctx.fillStyle = item.full ? '#666' : '#ffdd55';
-      ctx.fillText(item.sub, x+W-18, iy+26);
-    });
+      ctx.fillStyle = item.equipped ? '#ffd700'
+                    : item.owned    ? '#88ff88'
+                    : item.full     ? '#888'
+                    : locked        ? '#777799'
+                    : '#ddeeff';
+      ctx.fillText(item.label, x+22, iy+22);
+
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = locked ? '#556677' : '#8899aa';
+      if (item.hint) ctx.fillText(item.hint, x+22, iy+40);
+
+      ctx.textAlign = 'right';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillStyle = item.full ? '#666' : locked ? '#666699' : '#ffdd55';
+      ctx.fillText(item.sub, x+W-18, iy+24);
+    }
+
+    // Scroll down indicator
+    if (endI < items.length) {
+      ctx.fillStyle = 'rgba(100,160,255,0.65)';
+      ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('▼', cx, listY + (endI - startI) * iH + 14);
+    }
 
     const hint = touch.isMobile ? '點擊品項購買／賣出  ✕ 關閉' : '↑↓ 選擇  Enter 確認  E / ESC 關閉';
     ctx.textAlign = 'center'; ctx.font = '13px sans-serif'; ctx.fillStyle = '#445566';
-    ctx.fillText(hint, cx, y+H-12);
+    ctx.fillText(hint, cx, y+H-10);
 
     if (this.msgT > 0) {
       const alpha = Math.min(1, this.msgT/30);
