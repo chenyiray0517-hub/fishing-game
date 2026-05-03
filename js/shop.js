@@ -82,23 +82,22 @@ class ShopUI {
     if (this.type === 'rod') {
       const r = item.data;
       if (item.equipped) { this.notify('已裝備中'); return; }
-      if (item.owned) { player.equippedRod = r.id; this.notify(`裝備 ${r.name}`); return; }
+      if (item.owned) { player.equippedRod = r.id; player.save(); this.notify(`裝備 ${r.name}`); return; }
       if (player.money < r.price) { this.notify('金幣不足！', false); return; }
       player.money -= r.price; player.ownedRods.push(r.id); player.equippedRod = r.id;
-      this.notify(`購買 ${r.name}！`);
+      player.save(); this.notify(`購買 ${r.name}！`);
 
     } else if (this.type === 'bait') {
       const b = item.data;
       const cost = b.price * b.packSize;
       if (player.equippedBait !== b.id && player.bait[b.id] === 0) {
-        // First: switch equipped bait if buying new type
         player.equippedBait = b.id;
       }
       if (player.money < cost) { this.notify('金幣不足！', false); return; }
       player.money -= cost;
       player.bait[b.id] = (player.bait[b.id]||0) + b.packSize;
       player.equippedBait = b.id;
-      this.notify(`購買 ${b.name} ×${b.packSize}！`);
+      player.save(); this.notify(`購買 ${b.name} ×${b.packSize}！`);
 
     } else if (this.type === 'upgrade') {
       const u = item.data;
@@ -106,11 +105,11 @@ class ShopUI {
       const cost = player.upgradeCost(u.id);
       if (player.money < cost) { this.notify('金幣不足！', false); return; }
       player.money -= cost; player.upgrades[u.id]++;
-      this.notify(`${u.name} 升至 Lv${player.upgrades[u.id]}！`);
+      player.save(); this.notify(`${u.name} 升至 Lv${player.upgrades[u.id]}！`);
 
     } else if (this.type === 'market') {
       if (item.data === 'sell_all') {
-        const { earned, count } = player.sellAll();
+        const { earned, count } = player.sellAll(); // sellAll calls save internally
         this.notify(count > 0 ? `賣出 ${count} 條魚，獲得 $${earned}！` : '沒有魚', count>0);
         this.sel = 0;
       }

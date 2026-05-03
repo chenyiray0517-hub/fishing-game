@@ -241,6 +241,13 @@ class HarborScene {
       ctx.fillText(`🐟 ${player.fish.length} 條魚`, CONFIG.W-14,28);
     }
 
+    if (player._savedAt && Date.now() - player._savedAt < 2000) {
+      const a = Math.max(0, 1 - (Date.now() - player._savedAt) / 2000);
+      ctx.fillStyle = `rgba(80,220,120,${a})`;
+      ctx.font = '12px sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText('💾 進度已儲存', CONFIG.W - 8, CONFIG.H - 34);
+    }
+
     // Controls hint
     ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(0,CONFIG.H-28,CONFIG.W,28);
     ctx.fillStyle='#445566'; ctx.font='12px sans-serif'; ctx.textAlign='center';

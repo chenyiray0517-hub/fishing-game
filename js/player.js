@@ -15,6 +15,8 @@ class Player {
     this.equippedBait = 'worm';
     this.upgrades = { line: 0, hook: 0, reel: 0 };
     this.fish = [];
+    this._savedAt = 0;
+    this.load();
   }
 
   get rod()       { return CONFIG.RODS.find(r => r.id === this.equippedRod); }
@@ -29,14 +31,49 @@ class Player {
 
   refundBait() { this.bait[this.equippedBait]++; }
 
-  catchFish(fish) { this.fish.push({ ...fish }); }
+  catchFish(fish) { this.fish.push({ ...fish }); this.save(); }
 
   sellAll() {
     const earned = this.fish.reduce((s,f)=>s+f.value, 0);
     const count  = this.fish.length;
     this.money  += earned;
     this.fish    = [];
+    this.save();
     return { earned, count };
+  }
+
+  save() {
+    try {
+      localStorage.setItem('fishingGame_v1', JSON.stringify({
+        money:        this.money,
+        ownedRods:    this.ownedRods,
+        equippedRod:  this.equippedRod,
+        bait:         this.bait,
+        equippedBait: this.equippedBait,
+        upgrades:     this.upgrades,
+        fish:         this.fish,
+      }));
+      this._savedAt = Date.now();
+    } catch(e) {}
+  }
+
+  load() {
+    try {
+      const raw = localStorage.getItem('fishingGame_v1');
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      this.money        = d.money        ?? this.money;
+      this.ownedRods    = d.ownedRods    ?? this.ownedRods;
+      this.equippedRod  = d.equippedRod  ?? this.equippedRod;
+      this.bait         = d.bait         ?? this.bait;
+      this.equippedBait = d.equippedBait ?? this.equippedBait;
+      this.upgrades     = d.upgrades     ?? this.upgrades;
+      this.fish         = d.fish         ?? this.fish;
+      // Sanitize: equippedRod must be owned
+      if (!this.ownedRods.includes(this.equippedRod))
+        this.equippedRod = this.ownedRods[0] || 'wood';
+      return true;
+    } catch(e) { return false; }
   }
 
   getLineLen()        { return this.rod.lineLen * (1 + this.upgrades.line * 0.2); }

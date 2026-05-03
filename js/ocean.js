@@ -164,6 +164,13 @@ class OceanScene {
     ctx.fillStyle='#88ff88';
     ctx.fillText(`🐟 漁獲 ${player.fish.length} 條`, 260, 28);
 
+    if (player._savedAt && Date.now() - player._savedAt < 2000) {
+      const a = Math.max(0, 1 - (Date.now() - player._savedAt) / 2000);
+      ctx.fillStyle = `rgba(80,220,120,${a})`;
+      ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('💾 進度已儲存', 370, 28);
+    }
+
     if (touch.isMobile) {
       ctx.fillStyle = 'rgba(255,255,255,0.12)';
       ctx.beginPath(); ctx.roundRect(CONFIG.W - 114, 8, 106, 30, 6); ctx.fill();
