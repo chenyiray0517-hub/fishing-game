@@ -120,8 +120,8 @@ class FishingGame {
           this.tugProgress = Math.min(1, this.tugProgress + gain);
           this.tapCooldown = 22; // ~0.37 s at 60 fps
         }
-        // Slow decay keeps pressure up
-        this.tugProgress = Math.max(0, this.tugProgress - 0.0006);
+        // Slow decay keeps pressure up (skip if at max to allow win check to fire)
+        if (this.tugProgress < 1) this.tugProgress = Math.max(0, this.tugProgress - 0.0006);
       } else {
         // Desktop: mouse Y controls line, overlap with fish block fills progress
         const BAR_Y_abs = CONFIG.H / 2 - BAR_H / 2;
