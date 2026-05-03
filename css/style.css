@@ -1,3 +1,27 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: #0a0f1a; display: flex; justify-content: center; align-items: center; height: 100dvh; overflow: hidden; }
 canvas { border: 2px solid #334; display: block; touch-action: none; }
+
+#rotatePrompt {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #0a0f1a;
+  color: #88ccff;
+  font: bold 22px sans-serif;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+  z-index: 999;
+}
+#rotatePrompt .icon { font-size: 52px; animation: spin 1.8s ease-in-out infinite; }
+@keyframes spin {
+  0%,100% { transform: rotate(0deg); }
+  50%      { transform: rotate(90deg); }
+}
+
+@media (orientation: portrait) {
+  #rotatePrompt { display: flex; }
+}

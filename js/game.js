@@ -25,6 +25,9 @@ function init() {
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
+  // Try to lock orientation to landscape (works on Android; iOS requires manual rotate)
+  if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => {});
+
   game.canvas.addEventListener('mousemove', e => {
     const r = game.canvas.getBoundingClientRect();
     game.mouse.x = (e.clientX - r.left) * CONFIG.W / r.width;
