@@ -60,16 +60,18 @@ const CONFIG = {
     { x: 430, y: 460, r: 52, name: '神秘深淵', fish: ['tuna','swordfish','shark','dragon'],        biteTime:[6,12], itemDrops:[{id:'pond_map',chance:0.05},{id:'beach_map',chance:0.04}] },
   ],
 
+  // 海灘：需解鎖，整體明顯優於海洋/湖邊（avg $150~$460），等待更長
   BEACH_SPOTS: [
-    { x: 170, y: 335, r: 38, name: '礁岩', fish: ['sardine','catfish','bass','flounder'],   biteTime:[2,5], itemDrops:[{id:'pond_map',chance:0.05},{id:'lucky_charm',chance:0.02}] },
-    { x: 400, y: 358, r: 44, name: '沙洲', fish: ['bass','flounder','octopus','tuna'],       biteTime:[3,7], itemDrops:[{id:'pond_map',chance:0.05},{id:'lucky_charm',chance:0.02}] },
-    { x: 630, y: 340, r: 40, name: '外礁', fish: ['flounder','tuna','swordfish','shark'],    biteTime:[4,9], itemDrops:[{id:'pond_map',chance:0.06},{id:'lucky_charm',chance:0.03}] },
+    { x: 170, y: 335, r: 38, name: '礁岩', fish: ['trout','flounder','octopus','eel'],          biteTime:[4,9],  itemDrops:[{id:'pond_map',chance:0.05},{id:'lucky_charm',chance:0.02}] },
+    { x: 400, y: 358, r: 44, name: '沙洲', fish: ['eel','tuna','swordfish','shark'],             biteTime:[6,11], itemDrops:[{id:'pond_map',chance:0.05},{id:'lucky_charm',chance:0.02}] },
+    { x: 630, y: 340, r: 40, name: '外礁', fish: ['swordfish','shark','giant_cat','dragon'],     biteTime:[8,15], itemDrops:[{id:'pond_map',chance:0.06},{id:'lucky_charm',chance:0.03}] },
   ],
 
+  // 秘密池塘：最高級區域，獨家魚種（avg $480~$623），難度最高
   POND_SPOTS: [
-    { x: 200, y: 320, r: 42, name: '苔岸',   fish: ['moonfish','crystal_eel','spirit_carp'],              biteTime:[3,8],  itemDrops:[{id:'lucky_charm',chance:0.12},{id:'san_potion',chance:0.08},{id:'mystery_box',chance:0.06}] },
-    { x: 400, y: 365, r: 50, name: '幽深處', fish: ['spirit_carp','crystal_eel','void_squid','moonfish'],  biteTime:[5,12], itemDrops:[{id:'lucky_charm',chance:0.10},{id:'san_potion',chance:0.10},{id:'mystery_box',chance:0.08}] },
-    { x: 610, y: 315, r: 44, name: '月影潭', fish: ['moonfish','void_squid','spirit_carp'],                biteTime:[4,10], itemDrops:[{id:'lucky_charm',chance:0.12},{id:'san_potion',chance:0.08},{id:'mystery_box',chance:0.07}] },
+    { x: 200, y: 320, r: 42, name: '苔岸',   fish: ['moonfish','crystal_eel','spirit_carp'],              biteTime:[5,11], itemDrops:[{id:'lucky_charm',chance:0.12},{id:'san_potion',chance:0.08},{id:'mystery_box',chance:0.06}] },
+    { x: 400, y: 365, r: 50, name: '幽深處', fish: ['spirit_carp','crystal_eel','void_squid','moonfish'],  biteTime:[7,14], itemDrops:[{id:'lucky_charm',chance:0.10},{id:'san_potion',chance:0.10},{id:'mystery_box',chance:0.08}] },
+    { x: 610, y: 315, r: 44, name: '月影潭', fish: ['moonfish','void_squid','spirit_carp'],                biteTime:[6,13], itemDrops:[{id:'lucky_charm',chance:0.12},{id:'san_potion',chance:0.08},{id:'mystery_box',chance:0.07}] },
   ],
 
   // 道具定義
