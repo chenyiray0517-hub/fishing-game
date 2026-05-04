@@ -23,6 +23,9 @@ const touch = {
   // Energy drink button tap (per-frame)
   drinkTapped: false,
 
+  // 背包按鈕 tap (per-frame)
+  backpackTapped: false,
+
   // Interact button bounding rect (set by harbor render each frame)
   _iRect: null,
 
@@ -55,16 +58,27 @@ const touch = {
   _start(e) {
     e.preventDefault();
     const scene = game.scene;
-    const fs    = scene === 'ocean' ? game.ocean.fishing.state
-                : scene === 'lake'  ? game.lake.fishing.state
-                : null;
+    const sceneMap = { ocean: game.ocean, lake: game.lake, beach: game.beach, pond: game.pond };
+    const fs = sceneMap[scene]?.fishing?.state ?? null;
 
     for (const t of e.changedTouches) {
       const p = this._pos(t);
 
+      // 背包覆蓋層 — 任何點擊交給背包
+      if (game.backpack?.open) {
+        this.shopTap = p; // 複用 shopTap 傳給背包
+        continue;
+      }
+
       // Shop modal — any tap goes to shop handler
       if (game.shop.open) {
         this.shopTap = p;
+        continue;
+      }
+
+      // 背包按鈕（左上角）
+      if (Math.hypot(p.x - 28, p.y - 68) < 26) {
+        this.backpackTapped = true;
         continue;
       }
 
@@ -80,10 +94,13 @@ const touch = {
         continue;
       }
 
-      // Back-to-harbor button (ocean/lake HUD top-right area)
-      if ((scene === 'ocean' || scene === 'lake') && !fs && p.x > CONFIG.W * 0.72 && p.y < 48) {
-        if (scene === 'lake') { game.player.x = 752; game.player.y = 325; }
-        game.scene = 'harbor';
+      // Back button (top-right HUD) — 各場景都支援
+      const backScenes = ['ocean', 'lake', 'beach', 'pond'];
+      if (backScenes.includes(scene) && !fs && p.x > CONFIG.W * 0.72 && p.y < 48) {
+        if (scene === 'lake')  { game.player.x = 752; game.player.y = 325; game.scene = 'harbor'; }
+        else if (scene === 'ocean') { game.scene = 'harbor'; }
+        else if (scene === 'beach') { game.player.x = 400; game.player.y = CONFIG.H - 30; game.scene = 'lake'; }
+        else if (scene === 'pond')  { game.player.x = 400; game.player.y = 125; game.scene = 'lake'; }
         continue;
       }
 
@@ -162,24 +179,48 @@ const touch = {
     this.shopTap        = null;
     this.tugTapped      = false;
     this.drinkTapped    = false;
+    this.backpackTapped = false;
   },
 
   // ── Rendering ────────────────────────────────────────────────────────
 
   render(ctx) {
     if (!this.isMobile) return;
-    const fs = game.scene === 'ocean' ? game.ocean.fishing.state
-             : game.scene === 'lake'  ? game.lake.fishing.state
-             : null;
+
+    // 背包按鈕（左上角，始終顯示）
+    this._drawBackpackBtn(ctx);
+
+    const sceneMap = { ocean: game.ocean, lake: game.lake, beach: game.beach, pond: game.pond };
+    const fs = sceneMap[game.scene]?.fishing?.state ?? null;
 
     // During tug: fishing.js handles all tug UI; skip joystick/action btn
     if (fs === 'tug') return;
 
-    // Joystick: show when not mid-cast (wait is still navigable in harbor)
+    // Joystick: show when not mid-cast
     if (!fs || fs === 'wait') this._drawJoystick(ctx);
 
-    // Action button: ocean or lake
-    if (game.scene === 'ocean' || game.scene === 'lake') this._drawActionBtn(ctx, fs);
+    // Action button: fishing scenes
+    const fishingScenes = ['ocean', 'lake', 'beach', 'pond'];
+    if (fishingScenes.includes(game.scene)) this._drawActionBtn(ctx, fs);
+  },
+
+  _drawBackpackBtn(ctx) {
+    const bx = 28, by = 68;
+    const hasItems = game.player && Object.keys(game.player.items || {}).length > 0;
+    const isOpen   = game.backpack?.open;
+    ctx.save();
+    ctx.fillStyle = isOpen ? 'rgba(40,120,200,0.70)' : 'rgba(20,40,80,0.55)';
+    ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = isOpen ? '#88ccff' : 'rgba(100,140,200,0.5)'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI * 2); ctx.stroke();
+    ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff'; ctx.fillText('🎒', bx, by + 6);
+    // 有道具時顯示紅點
+    if (hasItems && !isOpen) {
+      ctx.fillStyle = '#ff4444';
+      ctx.beginPath(); ctx.arc(bx + 14, by - 14, 6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
   },
 
   _drawJoystick(ctx) {
@@ -207,9 +248,8 @@ const touch = {
     const blink = Math.floor(Date.now() / 180) % 2;
 
     if (!fs) {
-      const spot = game.scene === 'ocean'
-        ? game.ocean.nearbySpot(game.player)
-        : game.lake.nearbySpot(game.player);
+      const sceneMap = { ocean: game.ocean, lake: game.lake, beach: game.beach, pond: game.pond };
+      const spot = sceneMap[game.scene]?.nearbySpot(game.player);
       if (!spot || game.player.baitCount <= 0) return;
       label = '🎣'; bg = 'rgba(30,150,80,0.45)'; fg = '#66ffaa';
     } else if (fs === 'cast') {

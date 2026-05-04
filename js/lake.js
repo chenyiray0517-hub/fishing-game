@@ -27,13 +27,19 @@ class LakeScene {
   nearbyExit(player) {
     if (player.x < 55 && player.y > 235 && player.y < 435) return 'harbor';
     if (player.y > 468 && player.x > 330 && player.x < 470) return 'beach';
+    // 秘密池塘出口（頂部中央）
+    if (player.y - player.h < 70 && player.x > 330 && player.x < 470) return 'pond';
     return null;
   }
 
   canWalk(x, y, pw, ph) {
     const half = pw / 2;
     if (x - half < 5 || x + half > CONFIG.W - 5) return false;
-    if (y - ph < 92 || y > CONFIG.H - 18) return false;
+    if (y > CONFIG.H - 18) return false;
+    // 頂部允許通道（前往秘密池塘）
+    if (y - ph < 92) {
+      if (!(x > 335 && x < 465 && y - ph > 46)) return false;
+    }
     if (this._onLake(x, y)) return false;
     return true;
   }
@@ -136,7 +142,8 @@ class LakeScene {
     }
 
     this._drawExitPath(ctx);
-    this._drawBeachPath(ctx);
+    this._drawBeachPath(ctx, player);
+    this._drawPondPath(ctx, player);
     this._drawNPC(ctx);
 
     // Nearby prompts
@@ -146,17 +153,28 @@ class LakeScene {
       const ns   = this.nearbySpot(player);
       const nearNPC = this.nearbyNPC(player);
       if (exit) {
-        const exitLabel = exit === 'harbor'
-          ? (touch.isMobile ? '👆 返回港口' : '[E] 返回港口')
-          : (touch.isMobile ? '👆 前往海灘' : '[E] 前往海灘');
+        let exitLabel, locked = false;
+        if (exit === 'harbor') {
+          exitLabel = touch.isMobile ? '👆 返回港口' : '[E] 返回港口';
+        } else if (exit === 'beach') {
+          locked = !player.isUnlocked('beach');
+          exitLabel = locked
+            ? '🔒 海灘（需解鎖）'
+            : (touch.isMobile ? '👆 前往海灘' : '[E] 前往海灘');
+        } else { // pond
+          locked = !player.isUnlocked('pond');
+          exitLabel = locked
+            ? '🔒 秘密池塘（需解鎖）'
+            : (touch.isMobile ? '👆 前往秘密池塘' : '[E] 前往秘密池塘');
+        }
         ctx.font = 'bold 13px sans-serif';
         const tw = ctx.measureText(exitLabel).width + 24;
         const lbx = player.x - tw / 2, lby = player.y - 64;
         ctx.fillStyle = 'rgba(0,0,0,0.82)';
         ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.fill();
-        ctx.fillStyle = '#ffdd55'; ctx.textAlign = 'center';
+        ctx.fillStyle = locked ? '#ff8866' : '#ffdd55'; ctx.textAlign = 'center';
         ctx.fillText(exitLabel, player.x, player.y - 44);
-        touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
+        if (!locked) touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
       } else if (ns) {
         const hasBait = player.baitCount > 0;
         ctx.fillStyle = 'rgba(0,0,0,0.78)';
@@ -253,10 +271,11 @@ class LakeScene {
     ctx.fillText('能量飲料 $300！', bx + bw / 2, by + bh / 2 + 4);
   }
 
-  _drawBeachPath(ctx) {
+  _drawBeachPath(ctx, player) {
+    const locked = player && !player.isUnlocked('beach');
     // Bottom center dirt path leading to beach
-    ctx.fillStyle = '#d4ba78'; ctx.fillRect(348, 524, 104, CONFIG.H - 524);
-    ctx.strokeStyle = '#b09840'; ctx.lineWidth = 1;
+    ctx.fillStyle = locked ? '#5a4a28' : '#d4ba78'; ctx.fillRect(348, 524, 104, CONFIG.H - 524);
+    ctx.strokeStyle = locked ? '#3a3018' : '#b09840'; ctx.lineWidth = 1;
     for (let y = 534; y < CONFIG.H; y += 18) {
       ctx.beginPath(); ctx.moveTo(352, y); ctx.lineTo(448, y); ctx.stroke();
     }
@@ -268,10 +287,39 @@ class LakeScene {
     ctx.strokeStyle = '#5a3508'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(355, 536); ctx.lineTo(449, 536); ctx.stroke();
     // Sign
-    ctx.fillStyle = '#e8d090'; ctx.fillRect(366, 494, 70, 32);
-    ctx.strokeStyle = '#8a6020'; ctx.lineWidth = 1.5; ctx.strokeRect(366, 494, 70, 32);
-    ctx.fillStyle = '#3a2010'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('海灘 ↓', 401, 515);
+    ctx.fillStyle = locked ? '#3a3020' : '#e8d090'; ctx.fillRect(366, 494, 70, 32);
+    ctx.strokeStyle = locked ? '#6a5020' : '#8a6020'; ctx.lineWidth = 1.5; ctx.strokeRect(366, 494, 70, 32);
+    ctx.fillStyle = locked ? '#886644' : '#3a2010'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(locked ? '🔒 海灘' : '海灘 ↓', 401, 515);
+  }
+
+  _drawPondPath(ctx, player) {
+    const locked = player && !player.isUnlocked('pond');
+    // Top center path leading to secret pond
+    ctx.fillStyle = locked ? '#1a2214' : '#3a5a28'; ctx.fillRect(348, 0, 104, 72);
+    ctx.strokeStyle = locked ? '#141a10' : '#2a4a18'; ctx.lineWidth = 1;
+    for (let y = 8; y < 70; y += 16) {
+      ctx.beginPath(); ctx.moveTo(352, y); ctx.lineTo(448, y); ctx.stroke();
+    }
+    // 門柱（神秘風格）
+    [[348, 46], [440, 46]].forEach(([bpx, bpy]) => {
+      ctx.fillStyle = locked ? '#2a1838' : '#3a1060';
+      ctx.fillRect(bpx, bpy, 10, 28);
+      // 頂部寶珠
+      const glowCol = locked ? '#553388' : '#aa55ff';
+      ctx.shadowColor = glowCol; ctx.shadowBlur = locked ? 4 : 10;
+      ctx.fillStyle = glowCol;
+      ctx.beginPath(); ctx.arc(bpx + 5, bpy - 2, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+    // 橫樑
+    ctx.strokeStyle = locked ? '#3a2050' : '#7722cc'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(350, 56); ctx.lineTo(449, 56); ctx.stroke();
+    // 標示牌
+    ctx.fillStyle = locked ? '#1a1228' : '#1a0a30'; ctx.fillRect(353, 62, 94, 22);
+    ctx.strokeStyle = locked ? '#553388' : '#8833cc'; ctx.lineWidth = 1.5; ctx.strokeRect(353, 62, 94, 22);
+    ctx.fillStyle = locked ? '#775599' : '#cc88ff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(locked ? '🔒 秘密池塘' : '↑ 秘密池塘', 400, 77);
   }
 
   _drawExitPath(ctx) {

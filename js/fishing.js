@@ -13,6 +13,7 @@ class FishingGame {
     this.tugFish  = null;
     this.resOk    = false;
     this.resFish  = null;
+    this.resItem  = null; // 同時獲得的道具
     this.resT     = 0;
     // Tug minigame
     this.fishX       = 0;   this.fishY   = 0;
@@ -47,7 +48,12 @@ class FishingGame {
       if (spaceDown) {
         this.state   = 'wait';
         const [lo, hi] = this.spot.biteTime;
-        this.waitDur = Math.round((lo + Math.random()*(hi-lo)) * 60 * player.getBiteMultiplier());
+        let waitDur  = Math.round((lo + Math.random()*(hi-lo)) * 60 * player.getBiteMultiplier());
+        if (player.luckyCharmActive) {
+          waitDur = Math.round(waitDur * 0.2); // 幸運符：等待時間縮短 80%
+          player.luckyCharmActive = false;
+        }
+        this.waitDur = Math.max(30, waitDur);
         this.waitT   = 0; this.blink = 0;
       }
 
@@ -141,8 +147,17 @@ class FishingGame {
       // ── Win / lose ───────────────────────────────────────────────
       if (this.tugProgress >= 1) {
         player.catchFish(this.tugFish);
+        // 道具掉落檢定
+        this.resItem = null;
+        for (const drop of (this.spot.itemDrops || [])) {
+          if (Math.random() < drop.chance) {
+            player.addItem(drop.id);
+            this.resItem = CONFIG.ITEMS.find(it => it.id === drop.id) || null;
+            break; // 一次只掉一個
+          }
+        }
         this.state = 'result'; this.resOk = true;
-        this.resFish = this.tugFish; this.resT = 160;
+        this.resFish = this.tugFish; this.resT = 200;
       } else if (this.tugTimeLeft <= 0) {
         this.state = 'result'; this.resOk = false;
         this.resFish = this.tugFish; this.resT = 120;
@@ -294,14 +309,24 @@ class FishingGame {
     } else if (this.state === 'result') {
       if (this.resOk) {
         const alpha = Math.min(1, this.resT/30);
-        ctx.fillStyle=`rgba(50,220,100,${alpha})`; ctx.font='bold 30px sans-serif'; ctx.textAlign='center';
-        ctx.fillText('釣到了！', cx, cy-60);
-        sprites.fish(ctx, this.resFish.id, cx, cy - 10, this.resFish.sz * 2.2, this.resFish.color);
-        ctx.fillStyle=this.resFish.color; ctx.font='bold 24px sans-serif'; ctx.globalAlpha=alpha;
-        ctx.fillText(this.resFish.name, cx, cy+40);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle='#32dc64'; ctx.font='bold 30px sans-serif'; ctx.textAlign='center';
+        ctx.fillText('釣到了！', cx, cy - (this.resItem ? 80 : 60));
+        sprites.fish(ctx, this.resFish.id, cx, cy - (this.resItem ? 30 : 10), this.resFish.sz * 2.2, this.resFish.color);
+        ctx.fillStyle=this.resFish.color; ctx.font='bold 24px sans-serif';
+        ctx.fillText(this.resFish.name, cx, cy + (this.resItem ? 20 : 40));
         ctx.fillStyle='#ffdd55'; ctx.font='20px sans-serif';
-        ctx.fillText(`+$${this.resFish.value}`, cx, cy+72);
-        ctx.globalAlpha=1;
+        ctx.fillText(`+$${this.resFish.value}`, cx, cy + (this.resItem ? 52 : 72));
+        // 道具掉落顯示
+        if (this.resItem) {
+          ctx.fillStyle = 'rgba(255,220,80,0.18)';
+          ctx.beginPath(); ctx.roundRect(cx - 140, cy + 70, 280, 44, 10); ctx.fill();
+          ctx.strokeStyle = '#ffdd44'; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.roundRect(cx - 140, cy + 70, 280, 44, 10); ctx.stroke();
+          ctx.font = 'bold 15px sans-serif'; ctx.fillStyle = '#ffe866';
+          ctx.fillText(`✨ 獲得道具：${this.resItem.icon} ${this.resItem.name}`, cx, cy + 99);
+        }
+        ctx.globalAlpha = 1;
       } else {
         ctx.fillStyle='rgba(220,70,50,0.9)'; ctx.font='bold 30px sans-serif'; ctx.textAlign='center';
         ctx.fillText('魚跑掉了！', cx, cy);

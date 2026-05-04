@@ -343,7 +343,9 @@ class HarborScene {
     // Controls hint
     ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(0,CONFIG.H-28,CONFIG.W,28);
     ctx.fillStyle='#445566'; ctx.font='12px sans-serif'; ctx.textAlign='center';
-    const hint = touch.isMobile ? '左搖桿移動  靠近建築後點上方按鈕互動' : 'WASD / 方向鍵 移動  E 互動';
+    const hint = touch.isMobile
+      ? '左搖桿移動  靠近建築後點上方按鈕互動  🎒左上角開背包'
+      : 'WASD / 方向鍵 移動  E 互動  G 開背包';
     ctx.fillText(hint, CONFIG.W/2, CONFIG.H-10);
   }
 }

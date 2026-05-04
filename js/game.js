@@ -1,7 +1,7 @@
 const game = {
   canvas: null, ctx: null,
-  player: null, shop: null, harbor: null, ocean: null, lake: null,
-  scene: 'harbor',   // 'harbor' | 'ocean' | 'lake' | 'beach'
+  player: null, shop: null, backpack: null, harbor: null, ocean: null, lake: null, beach: null, pond: null,
+  scene: 'harbor',   // 'harbor' | 'ocean' | 'lake' | 'beach' | 'pond'
   keys: {},
   spacePressedThisFrame: false,
   mouse: { x: 400, y: 300 },
@@ -14,12 +14,14 @@ function init() {
   game.canvas.height = CONFIG.H;
   game.ctx = game.canvas.getContext('2d');
 
-  game.player = new Player();
-  game.shop   = new ShopUI();
-  game.harbor = new HarborScene();
-  game.ocean  = new OceanScene();
-  game.lake   = new LakeScene();
-  game.beach  = new BeachScene();
+  game.player   = new Player();
+  game.shop     = new ShopUI();
+  game.backpack = new Backpack();
+  game.harbor   = new HarborScene();
+  game.ocean    = new OceanScene();
+  game.lake     = new LakeScene();
+  game.beach    = new BeachScene();
+  game.pond     = new PondScene();
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup',   e => { game.keys[e.key] = false; });
@@ -63,11 +65,22 @@ function onKeyDown(e) {
 }
 
 function handlePress(key) {
+  // 背包覆蓋層吃掉所有輸入
+  if (game.backpack.open) {
+    game.backpack.handleKey(key, game.player);
+    return;
+  }
+
   // Shop overlay consumes all input
   if (game.shop.open) {
     game.shop.handleKey(key, game.player);
     return;
   }
+
+  const k = key.toLowerCase();
+
+  // G 鍵開關背包
+  if (k === 'g') { game.backpack.toggle(); return; }
 
   // ESC
   if (key === 'Escape') {
@@ -80,11 +93,12 @@ function handlePress(key) {
     } else if (game.scene === 'beach') {
       if (game.beach.fishing.state) game.beach.fishing.cancel(game.player);
       else { game.scene = 'lake'; game.player.x = 400; game.player.y = CONFIG.H - 30; }
+    } else if (game.scene === 'pond') {
+      if (game.pond.fishing.state) game.pond.fishing.cancel(game.player);
+      else { game.scene = 'lake'; game.player.x = 400; game.player.y = 125; }
     }
     return;
   }
-
-  const k = key.toLowerCase();
 
   if (k === 'e') {
     if (game.scene === 'harbor') {
@@ -110,7 +124,17 @@ function handlePress(key) {
       if (lakeExit === 'harbor') {
         game.scene = 'harbor'; game.player.x = 752; game.player.y = 325;
       } else if (lakeExit === 'beach') {
+        if (!game.player.isUnlocked('beach')) {
+          game.backpack.open = true; // 提示去背包解鎖
+          return;
+        }
         game.scene = 'beach'; game.player.x = 400; game.player.y = 148;
+      } else if (lakeExit === 'pond') {
+        if (!game.player.isUnlocked('pond')) {
+          game.backpack.open = true;
+          return;
+        }
+        game.scene = 'pond'; game.player.x = 400; game.player.y = CONFIG.H - 60;
       } else if (game.lake.nearbyNPC(game.player)) {
         game.shop.show('energy');
       } else {
@@ -122,6 +146,13 @@ function handlePress(key) {
         game.scene = 'lake'; game.player.x = 400; game.player.y = CONFIG.H - 30;
       } else {
         game.beach.tryFish(game.player);
+      }
+    } else if (game.scene === 'pond') {
+      const pondExit = game.pond.nearbyExit(game.player);
+      if (pondExit === 'lake') {
+        game.scene = 'lake'; game.player.x = 400; game.player.y = 125;
+      } else {
+        game.pond.tryFish(game.player);
       }
     }
   }
@@ -148,8 +179,21 @@ function update() {
   // Touch action button → space press (cast / bite)
   if (touch.drinkTapped) drinkEnergy();
 
-  if (touch.actionTapped && (game.scene === 'ocean' || game.scene === 'lake' || game.scene === 'beach')) {
-    const sceneObj = game.scene === 'ocean' ? game.ocean : game.scene === 'lake' ? game.lake : game.beach;
+  // 背包觸控
+  if (touch.backpackTapped) {
+    if (game.backpack.open) game.backpack.close();
+    else game.backpack.open = true;
+  }
+
+  // 背包開啟時消耗觸控
+  if (game.backpack.open) {
+    if (touch.shopTap) game.backpack.handleTouch(touch.shopTap, game.player);
+    return;
+  }
+
+  const fishingScenes = ['ocean', 'lake', 'beach', 'pond'];
+  if (touch.actionTapped && fishingScenes.includes(game.scene)) {
+    const sceneObj = { ocean: game.ocean, lake: game.lake, beach: game.beach, pond: game.pond }[game.scene];
     const fs = sceneObj.fishing.state;
     if (!fs) {
       sceneObj.tryFish(game.player);
@@ -175,6 +219,8 @@ function update() {
     game.lake.update(game.keys, game.spacePressedThisFrame, game.player);
   } else if (game.scene === 'beach') {
     game.beach.update(game.keys, game.spacePressedThisFrame, game.player);
+  } else if (game.scene === 'pond') {
+    game.pond.update(game.keys, game.spacePressedThisFrame, game.player);
   }
 
   updateSAN();
@@ -203,6 +249,7 @@ function updateSAN() {
       game.ocean.fishing.reset();
       game.lake.fishing.reset();
       game.beach.fishing.reset();
+      game.pond.fishing.reset();
       game.scene = 'harbor';
       p.x = game.harbor.BED.x; p.y = game.harbor.BED.y;
     }
@@ -237,6 +284,8 @@ function render() {
     game.lake.render(ctx, game.player);
   } else if (game.scene === 'beach') {
     game.beach.render(ctx, game.player);
+  } else if (game.scene === 'pond') {
+    game.pond.render(ctx, game.player);
   }
 
   if (game.shop.open) {
@@ -245,6 +294,7 @@ function render() {
 
   touch.render(ctx);
   renderSAN(ctx, game.player);
+  game.backpack.render(ctx, game.player);
 }
 
 function renderSAN(ctx, p) {
@@ -253,7 +303,6 @@ function renderSAN(ctx, p) {
   // Player canvas position
   const px = (game.scene === 'ocean') ? p.bx : p.x;
   const py = (game.scene === 'ocean') ? p.by - 68 : p.y - p.h - 12;
-  // beach uses same p.x/p.y as lake
 
   // SAN bar above player head
   const barW = 44, barH = 5, bx = px - barW / 2;

@@ -20,6 +20,15 @@ class Player {
     // Energy drinks — saved
     this.energyDrinks = 0;
 
+    // Items (backpack) — saved  {id: count}
+    this.items = {};
+
+    // Unlocked areas — saved
+    this.unlockedAreas = ['harbor', 'ocean', 'lake'];
+
+    // Lucky charm active — ephemeral
+    this.luckyCharmActive = false;
+
     // SAN (sanity) — ephemeral, not saved
     this.san       = 0;
     this.sanTimer  = 0;   // frames since last +1 san
@@ -53,17 +62,52 @@ class Player {
     return { earned, count };
   }
 
+  // ── 背包道具 ────────────────────────────────────────────────────────
+  addItem(id) {
+    this.items[id] = (this.items[id] || 0) + 1;
+    this.save();
+  }
+
+  removeItem(id) {
+    if (!this.items[id]) return false;
+    this.items[id]--;
+    if (this.items[id] <= 0) delete this.items[id];
+    this.save();
+    return true;
+  }
+
+  hasItem(id)   { return (this.items[id] || 0) > 0; }
+  itemCount(id) { return this.items[id] || 0; }
+
+  // 所有擁有的道具清單 [{cfg, count}]
+  itemList() {
+    return CONFIG.ITEMS
+      .filter(cfg => (this.items[cfg.id] || 0) > 0)
+      .map(cfg => ({ cfg, count: this.items[cfg.id] }));
+  }
+
+  unlockArea(area) {
+    if (!this.unlockedAreas.includes(area)) {
+      this.unlockedAreas.push(area);
+      this.save();
+    }
+  }
+
+  isUnlocked(area) { return this.unlockedAreas.includes(area); }
+
   save() {
     try {
       localStorage.setItem('fishingGame_v1', JSON.stringify({
-        money:        this.money,
-        ownedRods:    this.ownedRods,
-        equippedRod:  this.equippedRod,
-        bait:         this.bait,
-        equippedBait: this.equippedBait,
-        upgrades:      this.upgrades,
-        fish:          this.fish,
-        energyDrinks:  this.energyDrinks,
+        money:          this.money,
+        ownedRods:      this.ownedRods,
+        equippedRod:    this.equippedRod,
+        bait:           this.bait,
+        equippedBait:   this.equippedBait,
+        upgrades:       this.upgrades,
+        fish:           this.fish,
+        energyDrinks:   this.energyDrinks,
+        items:          this.items,
+        unlockedAreas:  this.unlockedAreas,
       }));
       this._savedAt = Date.now();
     } catch(e) {}
@@ -74,17 +118,22 @@ class Player {
       const raw = localStorage.getItem('fishingGame_v1');
       if (!raw) return false;
       const d = JSON.parse(raw);
-      this.money        = d.money        ?? this.money;
-      this.ownedRods    = d.ownedRods    ?? this.ownedRods;
-      this.equippedRod  = d.equippedRod  ?? this.equippedRod;
-      this.bait         = d.bait         ?? this.bait;
-      this.equippedBait = d.equippedBait ?? this.equippedBait;
-      this.upgrades     = d.upgrades     ?? this.upgrades;
-      this.fish         = d.fish         ?? this.fish;
-      this.energyDrinks = d.energyDrinks ?? this.energyDrinks;
+      this.money          = d.money          ?? this.money;
+      this.ownedRods      = d.ownedRods      ?? this.ownedRods;
+      this.equippedRod    = d.equippedRod    ?? this.equippedRod;
+      this.bait           = d.bait           ?? this.bait;
+      this.equippedBait   = d.equippedBait   ?? this.equippedBait;
+      this.upgrades       = d.upgrades       ?? this.upgrades;
+      this.fish           = d.fish           ?? this.fish;
+      this.energyDrinks   = d.energyDrinks   ?? this.energyDrinks;
+      this.items          = d.items          ?? this.items;
+      this.unlockedAreas  = d.unlockedAreas  ?? this.unlockedAreas;
       // Sanitize: equippedRod must be owned
       if (!this.ownedRods.includes(this.equippedRod))
         this.equippedRod = this.ownedRods[0] || 'wood';
+      // Ensure base areas are always unlocked
+      for (const a of ['harbor', 'ocean', 'lake'])
+        if (!this.unlockedAreas.includes(a)) this.unlockedAreas.push(a);
       return true;
     } catch(e) { return false; }
   }
