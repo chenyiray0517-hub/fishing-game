@@ -4,6 +4,11 @@ class HarborScene {
     this.PIER    = { x:316, y:405, w:168, h:148 };
     this.BOAT    = { x:358, y:460, w:84, h:48 };
     this.BED     = { x: 80, y: 375 };
+    // 第二海碼頭（左側水域）
+    this.DOCK2   = { x:50,  y:405, w:140, h:120 };
+    this.BOAT2   = { x:84,  y:455, w:80,  h:44  };
+    // 床邊地圖（牆上掛圖）
+    this.MAP_PROP = { x: 145, y: 338 };
 
     this.BUILDINGS = [
       { x:45,  y:88, w:158, h:148, type:'rod',     label:'釣竿商店', color:'#3d2a18', roof:'#7a5520', winCol:'#c8e8ff' },
@@ -26,8 +31,14 @@ class HarborScene {
     const bo = this.BOAT;
     const bcx = bo.x+bo.w/2, bcy = bo.y+bo.h/2;
     if (Math.hypot(x-bcx, y-bcy) < 100) return { type:'boat' };
+    // 第二海碼頭
+    const bo2 = this.BOAT2;
+    const bc2x = bo2.x+bo2.w/2, bc2y = bo2.y+bo2.h/2;
+    if (Math.hypot(x-bc2x, y-bc2y) < 90) return { type:'ocean2' };
     // Bed (respawn / san recovery)
     if (Math.hypot(x - this.BED.x, y - this.BED.y) < 58) return { type: 'bed' };
+    // 床邊地圖
+    if (Math.hypot(x - this.MAP_PROP.x, y - this.MAP_PROP.y) < 62) return { type: 'map' };
     // Lake path (right side, below fish market)
     if (Math.hypot(x - (CONFIG.W - 32), y - 328) < 78) return { type: 'lake' };
     return null;
@@ -43,11 +54,13 @@ class HarborScene {
       if (x > b.x+half && x < b.x+b.w-half && y > b.y+ph && y < b.y+b.h+ph/2) return false;
     }
 
-    // Water
+    // Water — allow walking on main pier OR second dock
     if (y > this.WATER_Y) {
-      const P = this.PIER;
-      if (x < P.x+8 || x > P.x+P.w-8) return false;
-      if (y > P.y+P.h-8) return false;
+      const P  = this.PIER;
+      const D2 = this.DOCK2;
+      const onPier  = x >= P.x+8  && x <= P.x+P.w-8  && y <= P.y+P.h-8;
+      const onDock2 = x >= D2.x+8 && x <= D2.x+D2.w-8 && y <= D2.y+D2.h-8;
+      if (!onPier && !onDock2) return false;
     }
     return true;
   }
@@ -186,31 +199,147 @@ class HarborScene {
     ctx.fillStyle='#3a2010'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
     ctx.fillText('出海', bx+bo.w/2, by+bo.h/2+4);
 
+    // 第二海碼頭
+    this._renderDock2(ctx, player);
+
     // Nearby prompt
     const n = this.nearby(player);
     if (n) {
       const SHOP_LABELS = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場' };
-      const labelText = n.type === 'boat' ? '出海'
-                      : n.type === 'lake' ? '前往湖邊'
-                      : n.type === 'bed'  ? (player.lying ? '起身' : '躺下 (恢復 SAN)')
-                      : (SHOP_LABELS[n.shopType] || '進入');
+      let labelText, locked = false;
+      if (n.type === 'boat') {
+        labelText = '出海（第一海）';
+      } else if (n.type === 'ocean2') {
+        locked = !player.isUnlocked('ocean2');
+        labelText = locked ? '🔒 第二海（需解鎖）' : '前往第二海';
+      } else if (n.type === 'lake') {
+        labelText = '前往湖邊';
+      } else if (n.type === 'bed') {
+        labelText = player.lying ? '起身' : '躺下 (恢復 SAN)';
+      } else if (n.type === 'map') {
+        labelText = '查看地圖';
+      } else {
+        labelText = SHOP_LABELS[n.shopType] || '進入';
+      }
       const label = touch.isMobile ? `👆 ${labelText}` : `[E] ${labelText}`;
       const tw = ctx.measureText(label).width + 24;
       const bx = player.x - tw / 2, by = player.y - 64;
       ctx.fillStyle = 'rgba(0,0,0,0.82)';
       ctx.beginPath(); ctx.roundRect(bx, by, tw, 28, 7); ctx.fill();
-      ctx.fillStyle = '#ffff44'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = locked ? '#ff8866' : '#ffff44';
+      ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(label, player.x, player.y - 44);
-      // Register tap area for mobile (slightly larger than visual button)
-      touch.setInteractRect(bx - 10, by - 10, tw + 20, 48);
+      if (!locked) touch.setInteractRect(bx - 10, by - 10, tw + 20, 48);
+      else touch.clearInteractRect();
     } else {
       touch.clearInteractRect();
     }
 
     this._renderBed(ctx);
+    this._renderMapProp(ctx);
     this._renderLakePath(ctx);
     this.renderPlayer(ctx, player);
     this.renderHUD(ctx, player);
+  }
+
+  _renderDock2(ctx, player) {
+    const D = this.DOCK2;
+    const locked = !player.isUnlocked('ocean2');
+
+    // 碼頭木板
+    ctx.fillStyle = locked ? '#3a2a0e' : '#6a4a14';
+    ctx.fillRect(D.x, D.y, D.w, D.h);
+    ctx.strokeStyle = locked ? '#2a1e08' : '#4a3008'; ctx.lineWidth = 1;
+    for (let py = D.y; py < D.y + D.h; py += 14) {
+      ctx.beginPath(); ctx.moveTo(D.x, py); ctx.lineTo(D.x + D.w, py); ctx.stroke();
+    }
+    ctx.strokeStyle = locked ? '#2a1e08' : '#4a3008'; ctx.lineWidth = 2;
+    ctx.strokeRect(D.x, D.y, D.w, D.w);
+
+    // 繫船柱
+    [[D.x + 10, D.y + 6], [D.x + D.w - 10, D.y + 6]].forEach(([bpx, bpy]) => {
+      ctx.fillStyle = '#3a2808'; ctx.fillRect(bpx - 5, bpy, 10, 22);
+      ctx.fillStyle = '#6a4810'; ctx.beginPath(); ctx.arc(bpx, bpy, 7, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // 第二海船
+    const bo2 = this.BOAT2;
+    const bobY = Math.sin(this.bobT) * 2.8;
+    const bx = bo2.x, by = bo2.y + bobY;
+
+    if (locked) {
+      // 鎖定狀態：灰暗老舊船
+      ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(bx + 4, by + 6, bo2.w, bo2.h);
+      ctx.fillStyle = '#2e2820';
+      ctx.beginPath();
+      ctx.moveTo(bx, by + 12); ctx.lineTo(bx + 6, by + bo2.h);
+      ctx.lineTo(bx + bo2.w - 6, by + bo2.h); ctx.lineTo(bx + bo2.w, by + 12);
+      ctx.lineTo(bx + bo2.w - 4, by); ctx.lineTo(bx + 4, by);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#1a1410'; ctx.lineWidth = 2; ctx.stroke();
+      // 鎖頭圖示
+      ctx.fillStyle = '#665544'; ctx.font = '20px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('🔒', bx + bo2.w / 2, by + bo2.h / 2 + 6);
+      // 標牌
+      ctx.fillStyle = '#2a2010'; ctx.fillRect(bx, by - 28, bo2.w, 20);
+      ctx.strokeStyle = '#4a3820'; ctx.lineWidth = 1; ctx.strokeRect(bx, by - 28, bo2.w, 20);
+      ctx.fillStyle = '#887766'; ctx.font = 'bold 10px sans-serif';
+      ctx.fillText('第二海（需海圖）', bx + bo2.w / 2, by - 14);
+    } else {
+      // 解鎖狀態：深海風格船（深藍色）
+      ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(bx + 4, by + 6, bo2.w, bo2.h);
+      ctx.fillStyle = '#1e2e4a';
+      ctx.beginPath();
+      ctx.moveTo(bx, by + 12); ctx.lineTo(bx + 6, by + bo2.h);
+      ctx.lineTo(bx + bo2.w - 6, by + bo2.h); ctx.lineTo(bx + bo2.w, by + 12);
+      ctx.lineTo(bx + bo2.w - 4, by); ctx.lineTo(bx + 4, by);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#1a2840'; ctx.lineWidth = 2; ctx.stroke();
+      // 條紋（藍色發光）
+      ctx.fillStyle = '#224488'; ctx.fillRect(bx, by + 6, bo2.w, 4);
+      ctx.shadowColor = '#4488ff'; ctx.shadowBlur = 5;
+      ctx.strokeStyle = '#4488ff'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(bx, by + 8); ctx.lineTo(bx + bo2.w, by + 8); ctx.stroke();
+      ctx.shadowBlur = 0;
+      // 桅桿
+      ctx.strokeStyle = '#1e2e4a'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(bx + bo2.w / 2, by); ctx.lineTo(bx + bo2.w / 2, by - 30); ctx.stroke();
+      // 旗（深藍）
+      ctx.fillStyle = '#1a3366';
+      ctx.beginPath(); ctx.moveTo(bx + bo2.w / 2, by - 30); ctx.lineTo(bx + bo2.w / 2 + 14, by - 22); ctx.lineTo(bx + bo2.w / 2, by - 14); ctx.closePath(); ctx.fill();
+      // 前端藍燈
+      ctx.shadowColor = '#44aaff'; ctx.shadowBlur = 8;
+      ctx.fillStyle = '#44aaff';
+      ctx.beginPath(); ctx.arc(bx + bo2.w - 4, by + 4, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      // 標牌
+      ctx.fillStyle = '#3a2010'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('前往第二海', bx + bo2.w / 2, by + bo2.h / 2 + 5);
+    }
+  }
+
+  _renderMapProp(ctx) {
+    const mx = this.MAP_PROP.x, my = this.MAP_PROP.y;
+    // 木框
+    ctx.fillStyle = '#6a3e10'; ctx.fillRect(mx - 24, my - 28, 48, 38);
+    ctx.strokeStyle = '#4a2808'; ctx.lineWidth = 1.5; ctx.strokeRect(mx - 24, my - 28, 48, 38);
+    // 地圖紙
+    ctx.fillStyle = '#e8d8a0'; ctx.fillRect(mx - 20, my - 24, 40, 30);
+    // 地圖內容（簡易圖案）
+    ctx.strokeStyle = '#8a6820'; ctx.lineWidth = 1;
+    // 陸地輪廓
+    ctx.beginPath(); ctx.moveTo(mx - 14, my - 18); ctx.lineTo(mx - 4, my - 12); ctx.lineTo(mx + 8, my - 16); ctx.lineTo(mx + 14, my - 8); ctx.stroke();
+    // 海域
+    ctx.strokeStyle = '#4488aa'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.arc(mx - 8, my + 2, 6, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(mx + 8, my, 5, 0, Math.PI * 2); ctx.stroke();
+    // 紅X標記
+    ctx.strokeStyle = '#cc3322'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(mx + 10, my - 18); ctx.lineTo(mx + 16, my - 12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mx + 16, my - 18); ctx.lineTo(mx + 10, my - 12); ctx.stroke();
+    // 標籤
+    ctx.fillStyle = '#4a3010'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('地圖', mx, my + 18);
   }
 
   _renderBed(ctx) {
@@ -344,8 +473,8 @@ class HarborScene {
     ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(0,CONFIG.H-28,CONFIG.W,28);
     ctx.fillStyle='#445566'; ctx.font='12px sans-serif'; ctx.textAlign='center';
     const hint = touch.isMobile
-      ? '左搖桿移動  靠近建築後點上方按鈕互動  🎒左上角開背包'
-      : 'WASD / 方向鍵 移動  E 互動  G 開背包';
+      ? '左搖桿移動  靠近建築後點上方按鈕互動  🎒背包  🗺️地圖'
+      : 'WASD / 方向鍵 移動  E 互動  G 背包  M 地圖';
     ctx.fillText(hint, CONFIG.W/2, CONFIG.H-10);
   }
 }
