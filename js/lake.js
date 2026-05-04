@@ -24,6 +24,12 @@ class LakeScene {
     return null;
   }
 
+  nearbyExit(player) {
+    if (player.x < 55 && player.y > 235 && player.y < 435) return 'harbor';
+    if (player.y > 468 && player.x > 330 && player.x < 470) return 'beach';
+    return null;
+  }
+
   canWalk(x, y, pw, ph) {
     const half = pw / 2;
     if (x - half < 5 || x + half > CONFIG.W - 5) return false;
@@ -58,11 +64,6 @@ class LakeScene {
       else             player.dir = 'down';
     }
 
-    // Auto-exit to harbor when walking off left edge
-    if (player.x < 18 && player.y > 240 && player.y < 430) {
-      game.scene = 'harbor';
-      player.x = 752; player.y = 325;
-    }
   }
 
   tryFish(player) {
@@ -135,14 +136,28 @@ class LakeScene {
     }
 
     this._drawExitPath(ctx);
+    this._drawBeachPath(ctx);
     this._drawNPC(ctx);
 
     // Nearby prompts
     touch.clearInteractRect();
     if (!this.fishing.state) {
-      const ns = this.nearbySpot(player);
+      const exit = this.nearbyExit(player);
+      const ns   = this.nearbySpot(player);
       const nearNPC = this.nearbyNPC(player);
-      if (ns) {
+      if (exit) {
+        const exitLabel = exit === 'harbor'
+          ? (touch.isMobile ? '👆 返回港口' : '[E] 返回港口')
+          : (touch.isMobile ? '👆 前往海灘' : '[E] 前往海灘');
+        ctx.font = 'bold 13px sans-serif';
+        const tw = ctx.measureText(exitLabel).width + 24;
+        const lbx = player.x - tw / 2, lby = player.y - 64;
+        ctx.fillStyle = 'rgba(0,0,0,0.82)';
+        ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.fill();
+        ctx.fillStyle = '#ffdd55'; ctx.textAlign = 'center';
+        ctx.fillText(exitLabel, player.x, player.y - 44);
+        touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
+      } else if (ns) {
         const hasBait = player.baitCount > 0;
         ctx.fillStyle = 'rgba(0,0,0,0.78)';
         ctx.beginPath(); ctx.roundRect(player.x - 52, player.y - 72, 104, 28, 6); ctx.fill();
@@ -236,6 +251,27 @@ class LakeScene {
     ctx.fillStyle = 'rgba(255,255,255,0.94)'; ctx.fill(); ctx.strokeStyle = '#aac8aa'; ctx.stroke();
     ctx.fillStyle = '#226622'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('能量飲料 $300！', bx + bw / 2, by + bh / 2 + 4);
+  }
+
+  _drawBeachPath(ctx) {
+    // Bottom center dirt path leading to beach
+    ctx.fillStyle = '#d4ba78'; ctx.fillRect(348, 524, 104, CONFIG.H - 524);
+    ctx.strokeStyle = '#b09840'; ctx.lineWidth = 1;
+    for (let y = 534; y < CONFIG.H; y += 18) {
+      ctx.beginPath(); ctx.moveTo(352, y); ctx.lineTo(448, y); ctx.stroke();
+    }
+    // Gate posts
+    [[350, 526], [439, 526]].forEach(([bpx, bpy]) => {
+      ctx.fillStyle = '#6a4010'; ctx.fillRect(bpx, bpy, 11, 28);
+      ctx.fillStyle = '#8a5820'; ctx.fillRect(bpx - 2, bpy - 5, 15, 9);
+    });
+    ctx.strokeStyle = '#5a3508'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(355, 536); ctx.lineTo(449, 536); ctx.stroke();
+    // Sign
+    ctx.fillStyle = '#e8d090'; ctx.fillRect(366, 494, 70, 32);
+    ctx.strokeStyle = '#8a6020'; ctx.lineWidth = 1.5; ctx.strokeRect(366, 494, 70, 32);
+    ctx.fillStyle = '#3a2010'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('海灘 ↓', 401, 515);
   }
 
   _drawExitPath(ctx) {

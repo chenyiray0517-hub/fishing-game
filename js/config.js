@@ -55,6 +55,12 @@ const CONFIG = {
     { x: 430, y: 460, r: 52, name: '神秘深淵', fish: ['tuna','swordfish','shark','dragon'],        biteTime:[6,12] },
   ],
 
+  BEACH_SPOTS: [
+    { x: 170, y: 335, r: 38, name: '礁岩',   fish: ['sardine', 'catfish', 'bass', 'flounder'],      biteTime: [2, 5] },
+    { x: 400, y: 358, r: 44, name: '沙洲',   fish: ['bass', 'flounder', 'octopus', 'tuna'],         biteTime: [3, 7] },
+    { x: 630, y: 340, r: 40, name: '外礁',   fish: ['flounder', 'tuna', 'swordfish', 'shark'],      biteTime: [4, 9] },
+  ],
+
   START_MONEY: 150,
   START_BAIT_COUNT: 5,
 };
