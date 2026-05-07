@@ -6,6 +6,21 @@ class LakeScene {
     this.LAKE = { cx: 490, cy: 360, rx: 215, ry: 150 };
     // NPC (energy drink vendor)
     this.NPC = { x: 722, y: 215 };
+
+    this.DIALOGUE_NPCS = [
+      { x: 155, y: 300, name: '賞鳥者', color: '#aaffaa',
+        lines: [
+          '噓——你看那邊，有一隻翠鳥！',
+          '這個湖的生態真好，我來觀察三個月了，連鰻魚都有。',
+          '上禮拜我在蘆葦叢看到一個影子，比人還大…不知道是什麼。',
+        ]},
+      { x: 685, y: 168, name: '素描畫家', color: '#ffddaa',
+        lines: [
+          '……（他正專注地凝視著湖面）',
+          '啊，你來釣魚？別靠太近，你嚇到我的模特兒了——就是那隻鷺鷥。',
+          '湖水的顏色每天都不一樣。我畫了整整三年，每一張都覺得還不夠。',
+        ]},
+    ];
   }
 
   _onLake(x, y) {
@@ -15,6 +30,13 @@ class LakeScene {
 
   nearbyNPC(player) {
     return Math.hypot(player.x - this.NPC.x, player.y - this.NPC.y) < 65;
+  }
+
+  nearbyDialogueNPC(player) {
+    for (const npc of this.DIALOGUE_NPCS) {
+      if (Math.hypot(player.x - npc.x, player.y - npc.y) < 62) return npc;
+    }
+    return null;
   }
 
   nearbySpot(player) {
@@ -145,6 +167,7 @@ class LakeScene {
     this._drawBeachPath(ctx, player);
     this._drawPondPath(ctx, player);
     this._drawNPC(ctx);
+    this._renderDialogueNPCs(ctx);
 
     // Nearby prompts
     touch.clearInteractRect();
@@ -191,12 +214,50 @@ class LakeScene {
         ctx.fillStyle = '#88ff88'; ctx.textAlign = 'center';
         ctx.fillText(label, player.x, player.y - 44);
         touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
+      } else {
+        const dNPC = this.nearbyDialogueNPC(player);
+        if (dNPC) {
+          const label = touch.isMobile ? `👆 和${dNPC.name}說話` : `[E] 和${dNPC.name}說話`;
+          ctx.font = 'bold 13px sans-serif';
+          const tw = ctx.measureText(label).width + 20;
+          const lbx = player.x - tw / 2, lby = player.y - 64;
+          ctx.fillStyle = 'rgba(0,0,0,0.82)';
+          ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.fill();
+          ctx.fillStyle = '#ffffaa'; ctx.textAlign = 'center';
+          ctx.fillText(label, player.x, player.y - 44);
+          touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
+        }
       }
     }
 
     this._renderPlayer(ctx, player);
     this.fishing.render(ctx);
     this._renderHUD(ctx, player);
+  }
+
+  _renderDialogueNPCs(ctx) {
+    for (const npc of this.DIALOGUE_NPCS) {
+      if (npc.name === '賞鳥者') {
+        drawNPCSprite(ctx, npc.x, npc.y, '#4a7a30', '#3a2808');
+        // Binoculars
+        ctx.fillStyle = '#222233';
+        ctx.fillRect(npc.x + 8, npc.y - 22, 8, 5);
+        ctx.fillRect(npc.x + 17, npc.y - 22, 8, 5);
+        ctx.strokeStyle = '#333344'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(npc.x + 16, npc.y - 20); ctx.lineTo(npc.x + 17, npc.y - 20); ctx.stroke();
+      } else {
+        // 素描畫家
+        drawNPCSprite(ctx, npc.x, npc.y, '#d8d0c0', '#7a5a30');
+        // Sketchbook
+        ctx.fillStyle = '#f8f4e8';
+        ctx.fillRect(npc.x + 9, npc.y - 26, 14, 18);
+        ctx.strokeStyle = '#c8baa0'; ctx.lineWidth = 1;
+        ctx.strokeRect(npc.x + 9, npc.y - 26, 14, 18);
+        ctx.strokeStyle = '#aaa090'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(npc.x + 9, npc.y - 20); ctx.lineTo(npc.x + 23, npc.y - 20); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(npc.x + 9, npc.y - 14); ctx.lineTo(npc.x + 23, npc.y - 14); ctx.stroke();
+      }
+    }
   }
 
   _drawTrees(ctx) {

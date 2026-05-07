@@ -3,6 +3,28 @@ class BeachScene {
     this.fishing  = new FishingGame();
     this.waveOff  = 0;
     this.WATER_Y  = 285;
+
+    this.DIALOGUE_NPCS = [
+      { x: 88, y: 254, name: '衝浪客', color: '#ffcc44',
+        lines: [
+          '嘿！今天的浪超棒的！',
+          '你來這裡釣魚？外礁那邊的旗魚可以拉斷普通的釣線，要用好一點的竿子。',
+          '上週我在海面上看到一道黑影，跟我衝浪板差不多長…嚇壞我了。',
+        ]},
+      { x: 714, y: 240, name: '老人', color: '#ccddff',
+        lines: [
+          '孩子，你知道這片海以前叫什麼名字嗎？',
+          '老漁夫傳說，深海底部住著一位神明，能給漁夫帶來運氣。',
+          '你看到的那條龍魚…說不定就是祂的化身。',
+        ]},
+    ];
+  }
+
+  nearbyDialogueNPC(player) {
+    for (const npc of this.DIALOGUE_NPCS) {
+      if (Math.hypot(player.x - npc.x, player.y - npc.y) < 62) return npc;
+    }
+    return null;
   }
 
   nearbyExit(player) {
@@ -109,6 +131,7 @@ class BeachScene {
 
     this._drawPalmTrees(ctx);
     this._drawExitPath(ctx);
+    this._renderDialogueNPCs(ctx);
 
     // Ocean water
     const waterG = ctx.createLinearGradient(0, this.WATER_Y, 0, CONFIG.H);
@@ -173,12 +196,50 @@ class BeachScene {
         ctx.beginPath(); ctx.roundRect(player.x - 52, player.y - 72, 104, 28, 6); ctx.fill();
         ctx.fillStyle = hasBait ? '#ffff44' : '#ff6644'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText(hasBait ? (touch.isMobile ? '點右下按鈕釣魚' : '[E] 開始釣魚') : '魚餌不足！', player.x, player.y - 53);
+      } else {
+        const dNPC = this.nearbyDialogueNPC(player);
+        if (dNPC) {
+          const label = touch.isMobile ? `👆 和${dNPC.name}說話` : `[E] 和${dNPC.name}說話`;
+          ctx.font = 'bold 13px sans-serif';
+          const tw = ctx.measureText(label).width + 20;
+          const lbx = player.x - tw / 2, lby = player.y - 64;
+          ctx.fillStyle = 'rgba(0,0,0,0.82)';
+          ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.fill();
+          ctx.fillStyle = '#ffffaa'; ctx.textAlign = 'center';
+          ctx.fillText(label, player.x, player.y - 44);
+          touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
+        }
       }
     }
 
     this._renderPlayer(ctx, player);
     this.fishing.render(ctx);
     this._renderHUD(ctx, player);
+  }
+
+  _renderDialogueNPCs(ctx) {
+    for (const npc of this.DIALOGUE_NPCS) {
+      if (npc.name === '衝浪客') {
+        drawNPCSprite(ctx, npc.x, npc.y, '#ff7722', '#d4a040');
+        // Surfboard leaning behind
+        ctx.fillStyle = '#1a88cc';
+        ctx.save();
+        ctx.translate(npc.x - 16, npc.y - 18);
+        ctx.rotate(-0.22);
+        ctx.fillRect(-4, -28, 8, 42);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-4, -28, 8, 6);
+        ctx.restore();
+      } else {
+        // 老人 — light clothing, white hair, sitting pose hinted by y offset
+        drawNPCSprite(ctx, npc.x, npc.y, '#d8d0b8', '#c8c8c8');
+        // Sunhat
+        ctx.fillStyle = '#d4b860';
+        ctx.beginPath(); ctx.ellipse(npc.x, npc.y - 29, 14, 4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#c8a840';
+        ctx.beginPath(); ctx.ellipse(npc.x, npc.y - 31, 9, 5, 0, 0, Math.PI * 2); ctx.fill();
+      }
+    }
   }
 
   _drawExitPath(ctx) {

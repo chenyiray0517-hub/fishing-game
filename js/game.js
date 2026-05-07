@@ -1,6 +1,6 @@
 const game = {
   canvas: null, ctx: null,
-  player: null, shop: null, backpack: null, gamemap: null,
+  player: null, shop: null, backpack: null, gamemap: null, dialogue: null,
   harbor: null, ocean: null, ocean2: null, lake: null, beach: null, pond: null,
   scene: 'harbor',   // 'harbor' | 'ocean' | 'ocean2' | 'lake' | 'beach' | 'pond'
   keys: {},
@@ -25,6 +25,7 @@ function init() {
   game.lake     = new LakeScene();
   game.beach    = new BeachScene();
   game.pond     = new PondScene();
+  game.dialogue = new DialogueSystem();
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup',   e => { game.keys[e.key] = false; });
@@ -68,6 +69,9 @@ function onKeyDown(e) {
 }
 
 function handlePress(key) {
+  // 對話進行中：任何按鍵推進或關閉
+  if (game.dialogue.active) { game.dialogue.advance(); return; }
+
   // 地圖覆蓋層
   if (game.gamemap.open) { game.gamemap.handleKey(key); return; }
 
@@ -93,6 +97,7 @@ function handlePress(key) {
 
   // ESC
   if (key === 'Escape') {
+    if (game.dialogue.active) { game.dialogue.close(); return; }
     if (game.scene === 'ocean') {
       if (game.ocean.fishing.state) game.ocean.fishing.cancel(game.player);
       else game.scene = 'harbor';
@@ -115,7 +120,11 @@ function handlePress(key) {
   if (k === 'e') {
     if (game.scene === 'harbor') {
       const n = game.harbor.nearby(game.player);
-      if (!n) return;
+      if (!n) {
+        const dNPC = game.harbor.nearbyDialogueNPC(game.player);
+        if (dNPC) game.dialogue.start(dNPC);
+        return;
+      }
       if (n.type === 'boat') {
         game.player.lying = false;
         game.scene = 'ocean';
@@ -156,6 +165,8 @@ function handlePress(key) {
       } else if (game.lake.nearbyNPC(game.player)) {
         game.shop.show('energy');
       } else {
+        const dNPC = game.lake.nearbyDialogueNPC(game.player);
+        if (dNPC) { game.dialogue.start(dNPC); return; }
         game.lake.tryFish(game.player);
       }
     } else if (game.scene === 'beach') {
@@ -163,6 +174,8 @@ function handlePress(key) {
       if (beachExit === 'lake') {
         game.scene = 'lake'; game.player.x = 400; game.player.y = CONFIG.H - 30;
       } else {
+        const dNPC = game.beach.nearbyDialogueNPC(game.player);
+        if (dNPC) { game.dialogue.start(dNPC); return; }
         game.beach.tryFish(game.player);
       }
     } else if (game.scene === 'ocean2') {
@@ -200,7 +213,7 @@ function update() {
   if (touch.drinkTapped) drinkEnergy();
 
   // 地圖觸控
-  if (touch.mapTapped) {
+  if (touch.mapTapped && !game.dialogue.active) {
     if (game.gamemap.open) game.gamemap.close();
     else game.gamemap.open = true;
   }
@@ -212,7 +225,7 @@ function update() {
   }
 
   // 背包觸控
-  if (touch.backpackTapped) {
+  if (touch.backpackTapped && !game.dialogue.active) {
     if (game.backpack.open) game.backpack.close();
     else game.backpack.open = true;
   }
@@ -236,6 +249,9 @@ function update() {
 
   // Touch interact button → E key
   if (touch.interactTapped) handlePress('e');
+
+  // 對話進行中：跳過場景更新（玩家停止移動）
+  if (game.dialogue.active) { updateSAN(); return; }
 
   game.shop.update();
   if (game.shop.open) {
@@ -333,6 +349,7 @@ function render() {
   renderSAN(ctx, game.player);
   game.backpack.render(ctx, game.player);
   game.gamemap.render(ctx, game.player);
+  game.dialogue.render(ctx);
 }
 
 function renderSAN(ctx, p) {

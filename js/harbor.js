@@ -19,6 +19,34 @@ class HarborScene {
 
     this.waveOff = 0;
     this.bobT    = 0;
+
+    this.DIALOGUE_NPCS = [
+      { x: 553, y: 385, name: '老漁夫', color: '#ffcc88',
+        lines: [
+          '老夫打了四十年的魚，這片海早就認識我了。',
+          '想釣大魚，就得先跟海交朋友。心急的人，只能撈到沙丁魚。',
+          '聽說最深的地方有條龍魚…老夫這輩子沒見過，但漁夫的眼睛不說謊。',
+        ]},
+      { x: 580, y: 390, name: '老漁夫的貓', color: '#ffaa44',
+        lines: [
+          '喵～',
+          '（牠盯著你桶裡的魚，眼神充滿期待）',
+          '喵嗚……（牠打了個哈欠，開始舔起爪子）',
+        ]},
+      { x: 228, y: 368, name: '小男孩', color: '#88ddff',
+        lines: [
+          '哇！你有一艘船耶！',
+          '我長大也要當漁夫！這樣每天都能吃魚！',
+          '爸爸說海裡有大怪物，但我才不怕呢！',
+        ]},
+    ];
+  }
+
+  nearbyDialogueNPC(player) {
+    for (const npc of this.DIALOGUE_NPCS) {
+      if (Math.hypot(player.x - npc.x, player.y - npc.y) < 62) return npc;
+    }
+    return null;
   }
 
   // Returns nearest interactable or null
@@ -202,8 +230,12 @@ class HarborScene {
     // 第二海碼頭
     this._renderDock2(ctx, player);
 
+    // 對話 NPC 繪製
+    this._renderDialogueNPCs(ctx);
+
     // Nearby prompt
-    const n = this.nearby(player);
+    const n    = this.nearby(player);
+    const dNPC = this.nearbyDialogueNPC(player);
     if (n) {
       const SHOP_LABELS = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場' };
       let labelText, locked = false;
@@ -231,6 +263,16 @@ class HarborScene {
       ctx.fillText(label, player.x, player.y - 44);
       if (!locked) touch.setInteractRect(bx - 10, by - 10, tw + 20, 48);
       else touch.clearInteractRect();
+    } else if (dNPC) {
+      const label = touch.isMobile ? `👆 和${dNPC.name}說話` : `[E] 和${dNPC.name}說話`;
+      ctx.font = 'bold 13px sans-serif';
+      const dtw = ctx.measureText(label).width + 20;
+      const dbx = player.x - dtw / 2, dby = player.y - 64;
+      ctx.fillStyle = 'rgba(0,0,0,0.82)';
+      ctx.beginPath(); ctx.roundRect(dbx, dby, dtw, 28, 7); ctx.fill();
+      ctx.fillStyle = '#ffffaa'; ctx.textAlign = 'center';
+      ctx.fillText(label, player.x, player.y - 44);
+      touch.setInteractRect(dbx - 10, dby - 10, dtw + 20, 48);
     } else {
       touch.clearInteractRect();
     }
@@ -240,6 +282,63 @@ class HarborScene {
     this._renderLakePath(ctx);
     this.renderPlayer(ctx, player);
     this.renderHUD(ctx, player);
+  }
+
+  _renderDialogueNPCs(ctx) {
+    for (const npc of this.DIALOGUE_NPCS) {
+      if (npc.name === '老漁夫的貓') {
+        this._drawCat(ctx, npc.x, npc.y);
+      } else if (npc.name === '小男孩') {
+        // Slightly shorter: draw at y-6 so feet are raised
+        drawNPCSprite(ctx, npc.x, npc.y - 6, '#e85530', '#1a1a08');
+      } else {
+        // 老漁夫
+        drawNPCSprite(ctx, npc.x, npc.y, '#5a3a18', '#909090');
+        // Old fishing rod prop
+        ctx.strokeStyle = '#7a5520'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(npc.x - 11, npc.y - 22);
+        ctx.lineTo(npc.x - 28, npc.y - 44);
+        ctx.stroke();
+        ctx.strokeStyle = '#aaddff'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(npc.x - 28, npc.y - 44);
+        ctx.lineTo(npc.x - 22, npc.y + 8);
+        ctx.stroke();
+      }
+    }
+  }
+
+  _drawCat(ctx, x, y) {
+    // Body
+    ctx.fillStyle = '#e09040';
+    ctx.beginPath(); ctx.ellipse(x, y - 8, 13, 9, 0, 0, Math.PI * 2); ctx.fill();
+    // Head
+    ctx.beginPath(); ctx.arc(x + 11, y - 14, 9, 0, Math.PI * 2); ctx.fill();
+    // Ears
+    ctx.fillStyle = '#cc7830';
+    ctx.beginPath(); ctx.moveTo(x + 5, y - 20); ctx.lineTo(x + 9, y - 29); ctx.lineTo(x + 14, y - 20); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + 14, y - 20); ctx.lineTo(x + 18, y - 29); ctx.lineTo(x + 22, y - 20); ctx.closePath(); ctx.fill();
+    // Eyes
+    ctx.fillStyle = '#44aa22';
+    ctx.beginPath(); ctx.ellipse(x + 8,  y - 14, 2.5, 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + 14, y - 14, 2.5, 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.ellipse(x + 8,  y - 14, 1, 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + 14, y - 14, 1, 2, 0, 0, Math.PI * 2); ctx.fill();
+    // Tail
+    ctx.strokeStyle = '#e09040'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x - 12, y - 6);
+    ctx.quadraticCurveTo(x - 22, y - 22, x - 14, y - 30); ctx.stroke();
+    // Whiskers
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + 11, y - 14); ctx.lineTo(x + 27, y - 16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 11, y - 13); ctx.lineTo(x + 27, y - 12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 11, y - 14); ctx.lineTo(x - 1,  y - 16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 11, y - 13); ctx.lineTo(x - 1,  y - 12); ctx.stroke();
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.ellipse(x, y, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
   }
 
   _renderDock2(ctx, player) {
