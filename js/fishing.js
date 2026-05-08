@@ -212,6 +212,7 @@ class FishingGame {
       const pct = 1 - this.biteT/75;
       ctx.fillStyle='rgba(255,200,0,0.5)';
       ctx.fillRect(cx-100*pct, cy+58, 200*pct, 10);
+      sprites.fishAnimated(ctx, this.tugFish.id, cx, cy + 118, this.tugFish.sz * 1.9, this.tugFish.color, -1, 'bite', Date.now(), 0);
 
     } else if (this.state === 'tug') {
       ctx.save();
@@ -224,10 +225,27 @@ class FishingGame {
       const progPct  = this.tugProgress;
       const progCol  = progPct > 0.75 ? '#44ff88' : progPct > 0.4 ? '#88cc44' : '#22aa55';
 
+      // 依魚速決定動畫狀態
+      let fishAnim = 'idle';
+      let startleAmt = 0;
+      const fishSpd = Math.hypot(this.fishVX, this.fishVY);
+      if (this.tugChangeT < 28) {
+        fishAnim = 'startle'; startleAmt = 1 - this.tugChangeT / 28;
+      } else if (this.tugChangeT < 52) {
+        fishAnim = 'turn';
+      } else if (fishSpd > 3.6) {
+        fishAnim = 'speedup';
+      } else if (this.fishVY < -0.82) {
+        fishAnim = 'rise';
+      } else if (this.fishVY > 0.82) {
+        fishAnim = 'sink';
+      }
+
       if (touch.isMobile) {
         // ── Mobile: just the progress bar, no fish block ─────────────
         const pW = 480, pH = 48, pX = cx - pW/2, pY = cy - 20;
 
+        sprites.fishAnimated(ctx, f.id, cx, pY - 115, f.sz * 1.5, f.color, -1, fishAnim, Date.now(), startleAmt);
         ctx.fillStyle = f.color; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText(f.name, cx, pY - 60);
 
@@ -281,7 +299,7 @@ class FishingGame {
         const glowA = (0.35 + pulse * 0.65).toFixed(3);
         ctx.strokeStyle = `rgba(${following ? '68,255,136' : '255,153,0'},${glowA})`; ctx.lineWidth = 8;
         ctx.strokeRect(bx - 4, by - 4, FW + 8, FH + 8);
-        sprites.fish(ctx, f.id, bx + FW/2, by + FH/2, f.sz * 0.85, blockColor, this.fishVX >= 0 ? 1 : -1);
+        sprites.fishAnimated(ctx, f.id, bx + FW/2, by + FH/2, f.sz * 0.85, blockColor, this.fishVX >= 0 ? 1 : -1, fishAnim, Date.now(), startleAmt);
 
         const fishMidX = bx + FW/2, fishMidY = by + FH/2;
         ctx.fillStyle = blockColor;
@@ -312,7 +330,7 @@ class FishingGame {
         ctx.globalAlpha = alpha;
         ctx.fillStyle='#32dc64'; ctx.font='bold 30px sans-serif'; ctx.textAlign='center';
         ctx.fillText('釣到了！', cx, cy - (this.resItem ? 80 : 60));
-        sprites.fish(ctx, this.resFish.id, cx, cy - (this.resItem ? 30 : 10), this.resFish.sz * 2.2, this.resFish.color);
+        sprites.fishAnimated(ctx, this.resFish.id, cx, cy - (this.resItem ? 30 : 10), this.resFish.sz * 2.2, this.resFish.color, 1, 'jump', Date.now(), 0);
         ctx.fillStyle=this.resFish.color; ctx.font='bold 24px sans-serif';
         ctx.fillText(this.resFish.name, cx, cy + (this.resItem ? 20 : 40));
         ctx.fillStyle='#ffdd55'; ctx.font='20px sans-serif';

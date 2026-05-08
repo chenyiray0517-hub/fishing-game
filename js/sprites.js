@@ -485,4 +485,132 @@ const sprites = {
     }
     ctx.closePath(); ctx.fill();
   },
+
+  // ── Animated fish ──────────────────────────────────────────────────────
+  // anim : 'idle'|'speedup'|'turn'|'rise'|'sink'|'startle'|'bite'|'jump'
+  // t    : Date.now()
+  // startleAmt : 0..1  (衝擊強度，用於 startle 的震幅衰退)
+  fishAnimated(ctx, id, cx, cy, sz, color, facing, anim, t, startleAmt = 0) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    const drawFn = sprites._fish[id] || sprites._fish._default;
+
+    // ── 受驚水平震動（在 scale 之前 translate，保持畫面方向正確）
+    if (anim === 'startle' && startleAmt > 0)
+      ctx.translate(Math.sin(t * 0.32) * startleAmt * sz * 0.5, 0);
+
+    ctx.scale(facing, 1);
+
+    // ── 身體旋轉角度
+    let bodyRot = 0;
+    switch (anim) {
+      case 'idle':    bodyRot = Math.sin(t * 0.0048) * 0.10; break;
+      case 'speedup': bodyRot = Math.sin(t * 0.011)  * 0.17; break;
+      case 'turn':    bodyRot = Math.sin(t * 0.0085) * 0.38; break;
+      case 'rise':    bodyRot = -0.27 + Math.sin(t * 0.006) * 0.05; break;
+      case 'sink':    bodyRot =  0.27 + Math.sin(t * 0.006) * 0.05; break;
+      case 'startle': bodyRot = Math.sin(t * 0.016) * 0.22 * Math.max(startleAmt, 0.28); break;
+      case 'bite':    bodyRot = Math.sin(t * 0.0055) * 0.09; break;
+      case 'jump':    bodyRot = -0.36; break;
+      default:        bodyRot = Math.sin(t * 0.005) * 0.09;
+    }
+    ctx.rotate(bodyRot);
+    drawFn(ctx, sz, color);
+
+    // ── 進食：嘴巴開合覆蓋層（在魚頭前端繪製暗弧）
+    if (anim === 'bite') {
+      const open = (Math.sin(t * 0.022) + 1) / 2;
+      if (open > 0.1) {
+        ctx.fillStyle = 'rgba(6,6,16,0.86)';
+        ctx.beginPath();
+        ctx.moveTo(sz * 1.48, 0);
+        ctx.arc(sz * 1.48, 0, sz * 0.46 * open, -0.18, Math.PI * 0.74);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    ctx.restore(); // 回到 (cx, cy)，無 scale / rotate
+
+    // ── 世界空間特效（不隨魚身旋轉）
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    if (anim === 'speedup') {
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 3; i++) {
+        const lx   = facing * (-sz * (2.2 + i * 0.85));
+        const ly   = (i - 1) * sz * 0.45;
+        const llen = facing * sz * (1.0 - i * 0.22);
+        ctx.strokeStyle = `rgba(180,215,255,${(0.58 - i * 0.16).toFixed(2)})`;
+        ctx.lineWidth = 1.9 - i * 0.45;
+        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx - llen, ly); ctx.stroke();
+      }
+      ctx.lineCap = 'butt';
+    }
+
+    if (anim === 'rise')
+      sprites._drawBubbles(ctx, t, sz, facing);
+
+    if (anim === 'bite') {
+      // 懸垂的釣線＋魚鉤
+      const hookX = sz * 0.8 * facing;
+      ctx.strokeStyle = 'rgba(220,220,220,0.7)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(hookX, -sz * 3.2); ctx.lineTo(hookX, -sz * 1.6); ctx.stroke();
+      ctx.strokeStyle = '#bbbbbb'; ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(hookX + sz * 0.18 * facing, -sz * 1.6, sz * 0.18, Math.PI * 0.5, Math.PI * 1.5, facing > 0);
+      ctx.stroke();
+      ctx.strokeStyle = '#cc5533'; ctx.lineWidth = sz * 0.11; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(hookX, -sz * 1.6);
+      ctx.bezierCurveTo(hookX + sz * 0.14 * facing, -sz * 1.2, hookX - sz * 0.1 * facing, -sz * 0.85, hookX + sz * 0.1 * facing, -sz * 0.65);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    }
+
+    if (anim === 'startle' && startleAmt > 0.08) {
+      const alpha = Math.min(1, startleAmt * 1.25);
+      ctx.fillStyle = `rgba(255,255,50,${alpha.toFixed(2)})`;
+      ctx.font = `bold ${Math.round(sz * 1.8)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('!', 0, -sz * 2.65);
+    }
+
+    if (anim === 'jump')
+      sprites._drawSplash(ctx, t, sz);
+
+    ctx.restore();
+  },
+
+  _drawBubbles(ctx, t, sz, facing = 1) {
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const phase = ((t * 0.0011 + i * 0.38) % 1);
+      const bx = facing * sz * (0.9 + i * 0.4);
+      const by = -(phase * sz * 2.4) - sz * 0.1;
+      const br = sz * (0.11 + i * 0.055);
+      ctx.strokeStyle = `rgba(160,225,255,${(0.72 - i * 0.14).toFixed(2)})`;
+      ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.stroke();
+    }
+  },
+
+  _drawSplash(ctx, t, sz) {
+    const age  = (t * 0.0035) % Math.PI;
+    const baseY = sz * 1.2;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 4) * Math.PI * 1.4 - Math.PI * 0.7;
+      const r = sz * (0.85 + Math.sin(age) * 0.52);
+      ctx.lineWidth = Math.max(0.4, 1.6 - i * 0.22);
+      ctx.strokeStyle = 'rgba(100,185,255,0.72)';
+      ctx.globalAlpha = 0.68;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * sz * 0.2, baseY);
+      ctx.lineTo(Math.cos(a) * r * 0.55, baseY - Math.abs(Math.sin(a)) * r);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.lineCap = 'butt';
+  },
 };
