@@ -45,6 +45,16 @@ function init() {
     game.mouse.y = (e.clientY - r.top)  * CONFIG.H / r.height;
   });
 
+  game.canvas.addEventListener('mousedown', e => {
+    const r = game.canvas.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * CONFIG.W / r.width;
+    const my = (e.clientY - r.top)  * CONFIG.H / r.height;
+    // Quest HUD toggle button (desktop only)
+    if (!touch.isMobile && mx >= 8 && mx <= 148 && my >= 92 && my <= 120) {
+      game.quest.hudOpen = !game.quest.hudOpen;
+    }
+  });
+
   requestAnimationFrame(loop);
 }
 
@@ -397,6 +407,7 @@ function render() {
 
   touch.render(ctx);
   renderSAN(ctx, game.player);
+  game.quest.renderHUDBtn(ctx, game.player);
   game.quest.renderHUD(ctx, game.player);
   game.backpack.render(ctx, game.player);
   game.encyclopedia.render(ctx, game.player);

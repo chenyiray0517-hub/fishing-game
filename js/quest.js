@@ -230,13 +230,34 @@ class QuestUI {
     ctx.fillText('✕', PX + PW - 20, PY + 25);
   }
 
-  // ── Left-side HUD (desktop always on; mobile toggle) ─────────────────
+  // ── Toggle button (both platforms, always visible) ───────────────────
+  renderHUDBtn(ctx, player) {
+    if (touch.isMobile) return; // mobile uses touch.js button
+    const list  = this._activeList(player);
+    const bx = 8, by = 92, bw = 140, bh = 28;
+    ctx.fillStyle = this.hudOpen ? 'rgba(20,100,180,0.82)' : 'rgba(8,20,40,0.76)';
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.fill();
+    ctx.strokeStyle = this.hudOpen ? '#4488ff' : 'rgba(40,90,160,0.45)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.stroke();
+    ctx.fillStyle = '#aaddff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('📋 進行中委託', bx + 10, by + 19);
+    ctx.fillStyle = '#6699cc'; ctx.textAlign = 'right';
+    ctx.fillText(this.hudOpen ? '▲' : '▼', bx + bw - 8, by + 19);
+    if (list.length > 0 && !this.hudOpen) {
+      ctx.fillStyle = '#ff4444';
+      ctx.beginPath(); ctx.arc(bx + bw - 2, by + 2, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(String(list.length), bx + bw - 2, by + 6);
+    }
+  }
+
+  // ── Left-side HUD (toggle on both platforms) ─────────────────────────
   renderHUD(ctx, player) {
     const list = this._activeList(player);
-    if (list.length === 0) return;
-    if (touch.isMobile && !this.hudOpen) return;
+    if (!this.hudOpen || list.length === 0) return;
 
-    const PX = 8, startY = 92, W = 198, rowH = 56, headerH = 30;
+    // On desktop the toggle button occupies y=92..120, so panel starts below it
+    const PX = 8, startY = touch.isMobile ? 92 : 124, W = 198, rowH = 56, headerH = 30;
     const totalH = headerH + list.length * rowH + 8;
 
     ctx.fillStyle = 'rgba(8,20,40,0.88)';
