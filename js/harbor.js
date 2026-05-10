@@ -20,6 +20,11 @@ class HarborScene {
     this.waveOff = 0;
     this.bobT    = 0;
 
+    this.QUEST_NPCS = [
+      { id: 'ocean',  x: 382, y: 368 },
+      { id: 'ocean2', x: 95,  y: 368 },
+    ];
+
     this.DIALOGUE_NPCS = [
       { x: 553, y: 385, name: '老漁夫', color: '#ffcc88',
         lines: [
@@ -40,6 +45,13 @@ class HarborScene {
           '爸爸說海裡有大怪物，但我才不怕呢！',
         ]},
     ];
+  }
+
+  nearbyQuestNPC(player) {
+    for (const npc of this.QUEST_NPCS) {
+      if (Math.hypot(player.x - npc.x, player.y - npc.y) < 62) return npc.id;
+    }
+    return null;
   }
 
   nearbyDialogueNPC(player) {
@@ -232,11 +244,26 @@ class HarborScene {
 
     // 對話 NPC 繪製
     this._renderDialogueNPCs(ctx);
+    // 任務 NPC 繪製
+    this._renderQuestNPCs(ctx, player);
 
     // Nearby prompt
+    const qNPCId = this.nearbyQuestNPC(player);
     const n    = this.nearby(player);
     const dNPC = this.nearbyDialogueNPC(player);
-    if (n) {
+    if (qNPCId) {
+      const cfg   = CONFIG.QUEST_NPC_DATA[qNPCId];
+      const marker = game.quest?.markerFor(qNPCId, player);
+      const label = touch.isMobile ? `👆 ${cfg.name}` : `[E] ${cfg.name}`;
+      ctx.font = 'bold 13px sans-serif';
+      const tw = ctx.measureText(label).width + 24;
+      const bx = player.x - tw / 2, by = player.y - 64;
+      ctx.fillStyle = 'rgba(0,0,0,0.82)';
+      ctx.beginPath(); ctx.roundRect(bx, by, tw, 28, 7); ctx.fill();
+      ctx.fillStyle = marker === '✓' ? '#44ff88' : '#ffdd44';
+      ctx.textAlign = 'center'; ctx.fillText(label, player.x, player.y - 44);
+      touch.setInteractRect(bx - 10, by - 10, tw + 20, 48);
+    } else if (n) {
       const SHOP_LABELS = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場' };
       let labelText, locked = false;
       if (n.type === 'boat') {
@@ -282,6 +309,15 @@ class HarborScene {
     this._renderLakePath(ctx);
     this.renderPlayer(ctx, player);
     this.renderHUD(ctx, player);
+  }
+
+  _renderQuestNPCs(ctx, player) {
+    for (const npc of this.QUEST_NPCS) {
+      const cfg    = CONFIG.QUEST_NPC_DATA[npc.id];
+      const marker = game.quest?.markerFor(npc.id, player) ?? '!';
+      drawNPCSprite(ctx, npc.x, npc.y, cfg.bodyColor, cfg.hairColor);
+      drawQuestMarker(ctx, npc.x, npc.y, marker);
+    }
   }
 
   _renderDialogueNPCs(ctx) {

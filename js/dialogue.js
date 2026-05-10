@@ -81,6 +81,21 @@ function _dlgWrap(ctx, text, x, y, maxW, lineH) {
   if (line) ctx.fillText(line, x, cy);
 }
 
+// Quest marker bubble above a quest NPC  ('!' = available, '✓' = claimable, null = in progress)
+function drawQuestMarker(ctx, x, y, markerType) {
+  if (!markerType) return;
+  const by = y - 54;
+  const col = markerType === '✓' ? '#44ff88' : '#ffdd00';
+  ctx.save();
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.arc(x, by, 13, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.40)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, by, 13, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#111'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(markerType, x, by + 5);
+  ctx.restore();
+}
+
 // Shared generic person sprite — called by each scene
 function drawNPCSprite(ctx, x, y, bodyColor, hairColor) {
   const w = 22, h = 32;

@@ -101,6 +101,19 @@ const CONFIG = {
       desc: '不知道裡面裝了什麼…\n打開後獲得 $500～$2000 的金幣。' },
   ],
 
+  QUEST_NPC_DATA: {
+    lake:   { name: '河邊探險家', bodyColor: '#3a6a30', hairColor: '#2a1808',
+              fish: ['sardine','catfish','carp','bass','trout','eel','giant_cat','swordfish'] },
+    beach:  { name: '海灘探險家', bodyColor: '#cc6622', hairColor: '#d4a040',
+              fish: ['trout','flounder','octopus','eel','tuna','swordfish','shark','giant_cat','dragon'] },
+    pond:   { name: '神秘收藏家', bodyColor: '#442266', hairColor: '#220a44',
+              fish: ['moonfish','crystal_eel','spirit_carp','void_squid'] },
+    ocean:  { name: '海洋調查員', bodyColor: '#1a3a6a', hairColor: '#1a1a38',
+              fish: ['sardine','catfish','bass','flounder','octopus','tuna','swordfish','shark','dragon'] },
+    ocean2: { name: '深海研究員', bodyColor: '#0a1e3a', hairColor: '#0a0a1a',
+              fish: ['eel','tuna','deep_marlin','swordfish','abyss_shark','sea_dragon'] },
+  },
+
   START_MONEY: 150,
   START_BAIT_COUNT: 5,
 };

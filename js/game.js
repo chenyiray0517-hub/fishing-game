@@ -1,6 +1,6 @@
 const game = {
   canvas: null, ctx: null,
-  player: null, shop: null, backpack: null, gamemap: null, dialogue: null, encyclopedia: null,
+  player: null, shop: null, backpack: null, gamemap: null, dialogue: null, encyclopedia: null, quest: null,
   harbor: null, ocean: null, ocean2: null, lake: null, beach: null, pond: null,
   scene: 'harbor',   // 'harbor' | 'ocean' | 'ocean2' | 'lake' | 'beach' | 'pond'
   keys: {},
@@ -27,6 +27,7 @@ function init() {
   game.pond     = new PondScene();
   game.dialogue     = new DialogueSystem();
   game.encyclopedia = new Encyclopedia();
+  game.quest        = new QuestUI();
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup',   e => { game.keys[e.key] = false; });
@@ -88,6 +89,12 @@ function handlePress(key) {
     return;
   }
 
+  // 任務覆蓋層吃掉所有輸入
+  if (game.quest.open) {
+    game.quest.handleKey(key, game.player);
+    return;
+  }
+
   // Shop overlay consumes all input
   if (game.shop.open) {
     game.shop.handleKey(key, game.player);
@@ -129,6 +136,8 @@ function handlePress(key) {
 
   if (k === 'e') {
     if (game.scene === 'harbor') {
+      const qId = game.harbor.nearbyQuestNPC(game.player);
+      if (qId) { game.quest.openFor(qId, game.player); return; }
       const n = game.harbor.nearby(game.player);
       if (!n) {
         const dNPC = game.harbor.nearbyDialogueNPC(game.player);
@@ -157,6 +166,8 @@ function handlePress(key) {
     } else if (game.scene === 'ocean') {
       game.ocean.tryFish(game.player);
     } else if (game.scene === 'lake') {
+      const qId = game.lake.nearbyQuestNPC(game.player);
+      if (qId) { game.quest.openFor(qId, game.player); return; }
       const lakeExit = game.lake.nearbyExit(game.player);
       if (lakeExit === 'harbor') {
         game.scene = 'harbor'; game.player.x = 752; game.player.y = 325;
@@ -180,6 +191,8 @@ function handlePress(key) {
         game.lake.tryFish(game.player);
       }
     } else if (game.scene === 'beach') {
+      const qId = game.beach.nearbyQuestNPC(game.player);
+      if (qId) { game.quest.openFor(qId, game.player); return; }
       const beachExit = game.beach.nearbyExit(game.player);
       if (beachExit === 'lake') {
         game.scene = 'lake'; game.player.x = 400; game.player.y = CONFIG.H - 30;
@@ -191,6 +204,8 @@ function handlePress(key) {
     } else if (game.scene === 'ocean2') {
       game.ocean2.tryFish(game.player);
     } else if (game.scene === 'pond') {
+      const qId = game.pond.nearbyQuestNPC(game.player);
+      if (qId) { game.quest.openFor(qId, game.player); return; }
       const pondExit = game.pond.nearbyExit(game.player);
       if (pondExit === 'lake') {
         game.scene = 'lake'; game.player.x = 400; game.player.y = 125;
@@ -255,6 +270,12 @@ function update() {
   // 圖鑑開啟時消耗觸控
   if (game.encyclopedia.open) {
     if (touch.shopTap) game.encyclopedia.handleTouch(touch.shopTap);
+    return;
+  }
+
+  // 任務開啟時消耗觸控
+  if (game.quest.open) {
+    if (touch.shopTap) game.quest.handleTouch(touch.shopTap, game.player);
     return;
   }
 
@@ -373,6 +394,7 @@ function render() {
   renderSAN(ctx, game.player);
   game.backpack.render(ctx, game.player);
   game.encyclopedia.render(ctx, game.player);
+  game.quest.render(ctx, game.player);
   game.gamemap.render(ctx, game.player);
   game.dialogue.render(ctx);
 }

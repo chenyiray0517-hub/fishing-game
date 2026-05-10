@@ -4,6 +4,8 @@ class BeachScene {
     this.waveOff  = 0;
     this.WATER_Y  = 285;
 
+    this.QUEST_NPC = { id: 'beach', x: 540, y: 250 };
+
     this.DIALOGUE_NPCS = [
       { x: 88, y: 254, name: '衝浪客', color: '#ffcc44',
         lines: [
@@ -18,6 +20,11 @@ class BeachScene {
           '你看到的那條龍魚…說不定就是祂的化身。',
         ]},
     ];
+  }
+
+  nearbyQuestNPC(player) {
+    const q = this.QUEST_NPC;
+    return Math.hypot(player.x - q.x, player.y - q.y) < 62 ? q.id : null;
   }
 
   nearbyDialogueNPC(player) {
@@ -132,6 +139,7 @@ class BeachScene {
     this._drawPalmTrees(ctx);
     this._drawExitPath(ctx);
     this._renderDialogueNPCs(ctx);
+    this._renderQuestNPC(ctx, player);
 
     // Ocean water
     const waterG = ctx.createLinearGradient(0, this.WATER_Y, 0, CONFIG.H);
@@ -178,9 +186,22 @@ class BeachScene {
     // Nearby prompts
     touch.clearInteractRect();
     if (!this.fishing.state) {
+      const qNPCId = this.nearbyQuestNPC(player);
       const exit = this.nearbyExit(player);
       const ns   = this.nearbySpot(player);
-      if (exit) {
+      if (qNPCId) {
+        const cfg    = CONFIG.QUEST_NPC_DATA[qNPCId];
+        const marker = game.quest?.markerFor(qNPCId, player);
+        const label  = touch.isMobile ? `👆 ${cfg.name}` : `[E] ${cfg.name}`;
+        ctx.font = 'bold 13px sans-serif';
+        const tw = ctx.measureText(label).width + 24;
+        const lbx = player.x - tw / 2, lby = player.y - 64;
+        ctx.fillStyle = 'rgba(0,0,0,0.82)';
+        ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.fill();
+        ctx.fillStyle = marker === '✓' ? '#44ff88' : '#ffdd44'; ctx.textAlign = 'center';
+        ctx.fillText(label, player.x, player.y - 44);
+        touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
+      } else if (exit) {
         const exitLabel = touch.isMobile ? '👆 返回湖邊' : '[E] 返回湖邊';
         ctx.font = 'bold 13px sans-serif';
         const tw = ctx.measureText(exitLabel).width + 24;
@@ -215,6 +236,14 @@ class BeachScene {
     this._renderPlayer(ctx, player);
     this.fishing.render(ctx);
     this._renderHUD(ctx, player);
+  }
+
+  _renderQuestNPC(ctx, player) {
+    const q   = this.QUEST_NPC;
+    const cfg = CONFIG.QUEST_NPC_DATA[q.id];
+    const marker = game.quest?.markerFor(q.id, player) ?? '!';
+    drawNPCSprite(ctx, q.x, q.y, cfg.bodyColor, cfg.hairColor);
+    drawQuestMarker(ctx, q.x, q.y, marker);
   }
 
   _renderDialogueNPCs(ctx) {

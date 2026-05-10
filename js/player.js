@@ -29,6 +29,9 @@ class Player {
     // Unlocked areas — saved
     this.unlockedAreas = ['harbor', 'ocean', 'lake'];
 
+    // Quest state — saved  { lake: {fishId,qty,reward}|null, ... }
+    this.activeQuests = { lake: null, beach: null, pond: null, ocean: null, ocean2: null };
+
     // Lucky charm active — ephemeral
     this.luckyCharmActive = false;
 
@@ -116,6 +119,7 @@ class Player {
         items:          this.items,
         unlockedAreas:  this.unlockedAreas,
         caughtIds:      this.caughtIds,
+        activeQuests:   this.activeQuests,
       }));
       this._savedAt = Date.now();
     } catch(e) {}
@@ -137,6 +141,10 @@ class Player {
       this.items          = d.items          ?? this.items;
       this.unlockedAreas  = d.unlockedAreas  ?? this.unlockedAreas;
       this.caughtIds      = d.caughtIds      ?? this.caughtIds;
+      if (d.activeQuests) {
+        for (const k of Object.keys(this.activeQuests))
+          this.activeQuests[k] = d.activeQuests[k] ?? null;
+      }
       // Sanitize: equippedRod must be owned
       if (!this.ownedRods.includes(this.equippedRod))
         this.equippedRod = this.ownedRods[0] || 'wood';

@@ -5,6 +5,7 @@ class PondScene {
     this.mistOff  = 0;
     // 水潭橢圓
     this.POND = { cx: 400, cy: 310, rx: 195, ry: 140 };
+    this.QUEST_NPC = { id: 'pond', x: 680, y: 490 };
     // 浮動粒子（螢火蟲效果）
     this.fireflies = Array.from({ length: 18 }, () => ({
       x: 80 + Math.random() * 640,
@@ -25,6 +26,11 @@ class PondScene {
       if (Math.hypot(player.x - s.x, player.y - s.y) < s.r + 36) return s;
     }
     return null;
+  }
+
+  nearbyQuestNPC(player) {
+    const q = this.QUEST_NPC;
+    return Math.hypot(player.x - q.x, player.y - q.y) < 62 ? q.id : null;
   }
 
   nearbyExit(player) {
@@ -184,13 +190,27 @@ class PondScene {
 
     // ── 回湖邊出口 ──────────────────────────────────────────────────
     this._drawExitPath(ctx);
+    this._renderQuestNPC(ctx, player);
 
     // ── 互動提示 ────────────────────────────────────────────────────
     touch.clearInteractRect();
     if (!this.fishing.state) {
+      const qNPCId = this.nearbyQuestNPC(player);
       const exit = this.nearbyExit(player);
       const ns   = this.nearbySpot(player);
-      if (exit) {
+      if (qNPCId) {
+        const cfg    = CONFIG.QUEST_NPC_DATA[qNPCId];
+        const marker = game.quest?.markerFor(qNPCId, player);
+        const label  = touch.isMobile ? `👆 ${cfg.name}` : `[E] ${cfg.name}`;
+        ctx.font = 'bold 13px sans-serif';
+        const tw = ctx.measureText(label).width + 24;
+        const lbx = player.x - tw / 2, lby = player.y - 64;
+        ctx.fillStyle = 'rgba(0,0,0,0.82)';
+        ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.fill();
+        ctx.fillStyle = marker === '✓' ? '#44ff88' : '#cc99ff'; ctx.textAlign = 'center';
+        ctx.fillText(label, player.x, player.y - 44);
+        touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
+      } else if (exit) {
         const exitLabel = touch.isMobile ? '👆 返回湖邊' : '[E] 返回湖邊';
         ctx.font = 'bold 13px sans-serif';
         const tw = ctx.measureText(exitLabel).width + 24;
@@ -212,6 +232,14 @@ class PondScene {
     this._renderPlayer(ctx, player);
     this.fishing.render(ctx);
     this._renderHUD(ctx, player);
+  }
+
+  _renderQuestNPC(ctx, player) {
+    const q   = this.QUEST_NPC;
+    const cfg = CONFIG.QUEST_NPC_DATA[q.id];
+    const marker = game.quest?.markerFor(q.id, player) ?? '!';
+    drawNPCSprite(ctx, q.x, q.y, cfg.bodyColor, cfg.hairColor);
+    drawQuestMarker(ctx, q.x, q.y, marker);
   }
 
   _drawForest(ctx) {
