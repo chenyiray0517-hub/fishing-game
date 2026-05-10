@@ -307,17 +307,19 @@ function updateSAN() {
     return;
   }
 
-  // Lying in bed recovers SAN (1/sec)
+  // Lying in bed recovers SAN (3/sec)
   if (p.lying && game.scene === 'harbor') {
     p.lyingTimer++;
-    if (p.lyingTimer >= 60) { p.lyingTimer = 0; p.san = Math.max(0, p.san - 1); }
+    if (p.lyingTimer >= 60) { p.lyingTimer = 0; p.san = Math.max(0, p.san - 3); }
     return;
   }
   if (p.lying) p.lying = false; // cancel lying outside harbor
 
-  // Passive SAN increase: +1 every 3 seconds (180 frames)
-  p.sanTimer++;
-  if (p.sanTimer >= 180) { p.sanTimer = 0; p.san = Math.min(100, p.san + 1); }
+  // Passive SAN increase: +1 every 3 seconds (180 frames), not in harbor
+  if (game.scene !== 'harbor') {
+    p.sanTimer++;
+    if (p.sanTimer >= 180) { p.sanTimer = 0; p.san = Math.min(100, p.san + 1); }
+  }
 
   // Trigger death countdown
   if (p.san >= 100 && p.deathTimer < 0) p.deathTimer = 5 * 60;
