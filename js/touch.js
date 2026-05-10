@@ -29,6 +29,9 @@ const touch = {
   // 地圖按鈕 tap (per-frame)
   mapTapped: false,
 
+  // 圖鑑按鈕 tap (per-frame)
+  encyclopediaTapped: false,
+
   // Interact button bounding rect (set by harbor render each frame)
   _iRect: null,
 
@@ -88,6 +91,12 @@ const touch = {
       // 地圖按鈕（背包右側）
       if (Math.hypot(p.x - 76, p.y - 68) < 24) {
         this.mapTapped = true;
+        continue;
+      }
+
+      // 圖鑑按鈕（地圖右側）
+      if (Math.hypot(p.x - 124, p.y - 68) < 22) {
+        this.encyclopediaTapped = true;
         continue;
       }
 
@@ -189,8 +198,9 @@ const touch = {
     this.shopTap        = null;
     this.tugTapped      = false;
     this.drinkTapped    = false;
-    this.backpackTapped = false;
-    this.mapTapped      = false;
+    this.backpackTapped     = false;
+    this.mapTapped          = false;
+    this.encyclopediaTapped = false;
   },
 
   // ── Rendering ────────────────────────────────────────────────────────
@@ -202,6 +212,8 @@ const touch = {
     this._drawBackpackBtn(ctx);
     // 地圖按鈕（背包右側）
     this._drawMapBtn(ctx);
+    // 圖鑑按鈕（地圖右側）
+    this._drawEncyclopediaBtn(ctx);
 
     const sceneMap = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond };
     const fs = sceneMap[game.scene]?.fishing?.state ?? null;
@@ -227,6 +239,19 @@ const touch = {
     ctx.beginPath(); ctx.arc(bx, by, 20, 0, Math.PI * 2); ctx.stroke();
     ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
     ctx.fillStyle = '#fff'; ctx.fillText('🗺️', bx, by + 5);
+    ctx.restore();
+  },
+
+  _drawEncyclopediaBtn(ctx) {
+    const bx = 124, by = 68;
+    const isOpen = game.encyclopedia?.open;
+    ctx.save();
+    ctx.fillStyle = isOpen ? 'rgba(140,80,20,0.70)' : 'rgba(20,40,80,0.55)';
+    ctx.beginPath(); ctx.arc(bx, by, 20, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = isOpen ? '#ffcc88' : 'rgba(100,140,200,0.5)'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(bx, by, 20, 0, Math.PI * 2); ctx.stroke();
+    ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff'; ctx.fillText('📖', bx, by + 5);
     ctx.restore();
   },
 

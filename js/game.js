@@ -1,6 +1,6 @@
 const game = {
   canvas: null, ctx: null,
-  player: null, shop: null, backpack: null, gamemap: null, dialogue: null,
+  player: null, shop: null, backpack: null, gamemap: null, dialogue: null, encyclopedia: null,
   harbor: null, ocean: null, ocean2: null, lake: null, beach: null, pond: null,
   scene: 'harbor',   // 'harbor' | 'ocean' | 'ocean2' | 'lake' | 'beach' | 'pond'
   keys: {},
@@ -25,7 +25,8 @@ function init() {
   game.lake     = new LakeScene();
   game.beach    = new BeachScene();
   game.pond     = new PondScene();
-  game.dialogue = new DialogueSystem();
+  game.dialogue     = new DialogueSystem();
+  game.encyclopedia = new Encyclopedia();
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup',   e => { game.keys[e.key] = false; });
@@ -81,6 +82,12 @@ function handlePress(key) {
     return;
   }
 
+  // 圖鑑覆蓋層吃掉所有輸入
+  if (game.encyclopedia.open) {
+    game.encyclopedia.handleKey(key);
+    return;
+  }
+
   // Shop overlay consumes all input
   if (game.shop.open) {
     game.shop.handleKey(key, game.player);
@@ -94,6 +101,9 @@ function handlePress(key) {
 
   // G 鍵開關背包
   if (k === 'g') { game.backpack.toggle(); return; }
+
+  // H 鍵開關圖鑑
+  if (k === 'h') { game.encyclopedia.toggle(); return; }
 
   // ESC
   if (key === 'Escape') {
@@ -236,6 +246,18 @@ function update() {
     return;
   }
 
+  // 圖鑑觸控
+  if (touch.encyclopediaTapped && !game.dialogue.active) {
+    if (game.encyclopedia.open) game.encyclopedia.close();
+    else game.encyclopedia.open = true;
+  }
+
+  // 圖鑑開啟時消耗觸控
+  if (game.encyclopedia.open) {
+    if (touch.shopTap) game.encyclopedia.handleTouch(touch.shopTap);
+    return;
+  }
+
   const fishingScenes = ['ocean', 'ocean2', 'lake', 'beach', 'pond'];
   if (touch.actionTapped && fishingScenes.includes(game.scene)) {
     const sceneObj = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond }[game.scene];
@@ -350,6 +372,7 @@ function render() {
   touch.render(ctx);
   renderSAN(ctx, game.player);
   game.backpack.render(ctx, game.player);
+  game.encyclopedia.render(ctx, game.player);
   game.gamemap.render(ctx, game.player);
   game.dialogue.render(ctx);
 }

@@ -23,6 +23,9 @@ class Player {
     // Items (backpack) — saved  {id: count}
     this.items = {};
 
+    // Encyclopedia: fish species ever caught — saved  {id: true}
+    this.caughtIds = {};
+
     // Unlocked areas — saved
     this.unlockedAreas = ['harbor', 'ocean', 'lake'];
 
@@ -51,7 +54,11 @@ class Player {
 
   refundBait() { this.bait[this.equippedBait]++; }
 
-  catchFish(fish) { this.fish.push({ ...fish }); this.save(); }
+  catchFish(fish) {
+    this.fish.push({ ...fish });
+    this.caughtIds[fish.id] = true;
+    this.save();
+  }
 
   sellAll() {
     const earned = this.fish.reduce((s,f)=>s+f.value, 0);
@@ -108,6 +115,7 @@ class Player {
         energyDrinks:   this.energyDrinks,
         items:          this.items,
         unlockedAreas:  this.unlockedAreas,
+        caughtIds:      this.caughtIds,
       }));
       this._savedAt = Date.now();
     } catch(e) {}
@@ -128,6 +136,7 @@ class Player {
       this.energyDrinks   = d.energyDrinks   ?? this.energyDrinks;
       this.items          = d.items          ?? this.items;
       this.unlockedAreas  = d.unlockedAreas  ?? this.unlockedAreas;
+      this.caughtIds      = d.caughtIds      ?? this.caughtIds;
       // Sanitize: equippedRod must be owned
       if (!this.ownedRods.includes(this.equippedRod))
         this.equippedRod = this.ownedRods[0] || 'wood';
