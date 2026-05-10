@@ -337,6 +337,208 @@ const sprites = {
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*2.05,-s*0.38,s*0.3,0,Math.PI*2); ctx.fill();
       ctx.fillStyle = '#cc0000'; ctx.beginPath(); ctx.arc(s*2.1,-s*0.38,s*0.15,0,Math.PI*2); ctx.fill();
     },
+
+    // 月亮魚 — round disc body, tall fins, moon-glow shimmer
+    moonfish(ctx, sz, color) {
+      const s = sz;
+      ctx.fillStyle = 'rgba(180,225,255,0.18)';
+      ctx.beginPath(); ctx.ellipse(0, 0, s*1.85, s*1.75, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = color; ctx.strokeStyle = 'rgba(100,170,220,0.4)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.ellipse(0, 0, s*1.45, s*1.35, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(220,245,255,0.38)';
+      ctx.beginPath(); ctx.ellipse(-s*0.2,-s*0.25,s*0.85,s*0.75,0.25,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = color; ctx.strokeStyle = 'rgba(100,170,220,0.4)';
+      ctx.beginPath(); ctx.moveTo(-s*0.35,-s*1.35); ctx.lineTo(s*0.05,-s*2.5); ctx.lineTo(s*0.5,-s*1.35); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*0.35,s*1.35); ctx.lineTo(s*0.05,s*2.35); ctx.lineTo(s*0.5,s*1.35); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*1.4,-s*0.1); ctx.lineTo(-s*2.0,-s*0.7); ctx.lineTo(-s*2.0,s*0.7); ctx.lineTo(-s*1.4,s*0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.42)';
+      ctx.beginPath(); ctx.ellipse(s*0.3,-s*0.42,s*0.38,s*0.26,-0.4,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*0.92,-s*0.18,s*0.28,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1a1a3a'; ctx.beginPath(); ctx.arc(s*0.97,-s*0.18,s*0.14,0,Math.PI*2); ctx.fill();
+    },
+
+    // 水晶鰻 — crystalline sinuous body with gem facets
+    crystal_eel(ctx, sz, color) {
+      const s = sz;
+      ctx.strokeStyle = color; ctx.lineWidth = s*0.55; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(s*2.6,0);
+      ctx.bezierCurveTo(s*1.4,-s*0.5,-s*0.5,s*0.5,-s*1.6,0);
+      ctx.bezierCurveTo(-s*2.3,-s*0.4,-s*3.1,-s*0.18,-s*3.6,0.1);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.strokeStyle = 'rgba(200,255,245,0.68)'; ctx.lineWidth = s*0.22;
+      ctx.beginPath();
+      ctx.moveTo(s*2.45,0);
+      ctx.bezierCurveTo(s*1.4,-s*0.22,-s*0.4,s*0.24,-s*1.45,0);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(160,255,230,0.48)';
+      [[s*1.85,-s*0.1],[s*0.65,-s*0.28],[-s*0.45,s*0.22],[-s*1.5,-s*0.08]].forEach(([x,y])=>{
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+s*0.22,y-s*0.34); ctx.lineTo(x+s*0.44,y); ctx.lineTo(x+s*0.22,y+s*0.28); ctx.closePath(); ctx.fill();
+      });
+      ctx.strokeStyle = 'rgba(100,220,200,0.55)'; ctx.lineWidth = s*0.14;
+      ctx.beginPath(); ctx.moveTo(s*1.6,-s*0.35); ctx.lineTo(s*2.0,-s*0.85); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s*0.4,s*0.32); ctx.lineTo(s*0.6,s*0.75); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*2.18,-s*0.13,s*0.25,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#00bbdd'; ctx.beginPath(); ctx.arc(s*2.23,-s*0.13,s*0.12,0,Math.PI*2); ctx.fill();
+    },
+
+    // 靈鯉 — spirit carp, sakura-pink with ethereal glow trails
+    spirit_carp(ctx, sz, color) {
+      const s = sz;
+      ctx.fillStyle = 'rgba(255,150,205,0.2)';
+      ctx.beginPath(); ctx.ellipse(0,0,s*2.35,s*1.45,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = color; ctx.strokeStyle = 'rgba(200,70,145,0.35)'; ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(s*1.9,0);
+      ctx.bezierCurveTo(s*1.9,-s*1.1,-s*1.2,-s*1.0,-s*1.75,0);
+      ctx.bezierCurveTo(-s*1.2,s*0.9,s*1.9,s*1.1,s*1.9,0);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*1.75,0); ctx.lineTo(-s*2.7,-s*1.0); ctx.lineTo(-s*2.7,s*1.0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,110,175,0.38)'; ctx.lineWidth = s*0.15;
+      for (let i=0; i<3; i++) for (let j=0; j<2; j++) {
+        ctx.beginPath(); ctx.arc(-s*0.55+i*s*0.68,-s*0.18+j*s*0.55,s*0.42,Math.PI*0.12,Math.PI*0.88); ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(255,200,230,0.6)';
+      [[-s*0.6,-s*1.45,s*0.14],[s*0.2,-s*1.55,s*0.11],[s*1.0,-s*1.35,s*0.1]].forEach(([x,y,r])=>{
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      });
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(-s*0.2,-s*1.0); ctx.lineTo(s*0.5,-s*1.85); ctx.lineTo(s*1.15,-s*1.0); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,170,215,0.9)'; ctx.lineWidth = s*0.14; ctx.lineCap = 'round';
+      [[s*1.85,-s*0.12,s*2.62,-s*0.58],[s*1.85,s*0.12,s*2.62,s*0.48]].forEach(([x1,y1,x2,y2])=>{
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      });
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*1.3,-s*0.25,s*0.3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#cc44aa'; ctx.beginPath(); ctx.arc(s*1.36,-s*0.25,s*0.15,0,Math.PI*2); ctx.fill();
+    },
+
+    // 虛空魷 — void squid, dark purple mantle with glowing eyes and void tendrils
+    void_squid(ctx, sz, color) {
+      const s = sz;
+      ctx.fillStyle = 'rgba(90,20,170,0.2)';
+      ctx.beginPath(); ctx.ellipse(0,-s*0.55,s*1.65,s*1.35,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = color; ctx.strokeStyle = 'rgba(55,0,110,0.45)'; ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(0,-s*1.35);
+      ctx.bezierCurveTo(s*1.25,-s*1.35,s*1.25,-s*0.15,s*0.85,s*0.35);
+      ctx.lineTo(0,s*0.65); ctx.lineTo(-s*0.85,s*0.35);
+      ctx.bezierCurveTo(-s*1.25,-s*0.15,-s*1.25,-s*1.35,0,-s*1.35);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(-s*0.5,-s*1.35); ctx.lineTo(-s*1.05,-s*2.05); ctx.lineTo(-s*0.02,-s*1.45); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(s*0.5,-s*1.35); ctx.lineTo(s*1.05,-s*2.05); ctx.lineTo(s*0.02,-s*1.45); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = s*0.27; ctx.lineCap = 'round';
+      [[-s*0.78,s*0.5,-s*1.12,s*1.5,-s*0.58,s*2.1],
+       [-s*0.28,s*0.56,-s*0.44,s*1.8,0,s*2.3],
+       [s*0.28,s*0.56,s*0.44,s*1.8,0,s*2.3],
+       [s*0.78,s*0.5,s*1.12,s*1.5,s*0.58,s*2.1]].forEach(([x1,y1,x2,y2,x3,y3])=>{
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(x2,y2,x2,y2,x3,y3); ctx.stroke();
+      });
+      ctx.lineWidth = s*0.15;
+      [[-s*0.58,s*0.52,-s*1.5,s*2.35],[-s*0.08,s*0.62,0.1,s*2.85],[s*0.6,s*0.52,s*1.5,s*2.35]].forEach(([x1,y1,x2,y2])=>{
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo((x1+x2)/2+s*0.28,y1+(y2-y1)*0.5,x2,y2); ctx.stroke();
+      });
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = 'rgba(210,155,255,0.95)';
+      ctx.beginPath(); ctx.arc(-s*0.38,-s*0.52,s*0.28,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s*0.38,-s*0.52,s*0.28,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1a0030';
+      ctx.beginPath(); ctx.arc(-s*0.38,-s*0.52,s*0.13,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s*0.38,-s*0.52,s*0.13,0,Math.PI*2); ctx.fill();
+    },
+
+    // 深海旗魚 — dark blue billfish with bioluminescent stripe
+    deep_marlin(ctx, sz, color) {
+      const s = sz;
+      ctx.fillStyle = color; ctx.strokeStyle = 'rgba(0,0,55,0.45)'; ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(s*2.4,0);
+      ctx.bezierCurveTo(s*2.4,-s*0.75,-s*1.5,-s*0.85,-s*2.3,0);
+      ctx.bezierCurveTo(-s*1.5,s*0.85,s*2.4,s*0.75,s*2.4,0);
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = s*0.30; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(s*2.4,-s*0.1); ctx.lineTo(s*4.2,s*0.05); ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(-s*0.4,-s*0.85); ctx.lineTo(s*0.4,-s*2.4); ctx.lineTo(s*1.8,-s*1.6); ctx.lineTo(s*2.2,-s*0.85); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-s*2.3,0); ctx.lineTo(-s*3.3,-s*1.1); ctx.lineTo(-s*3.3,s*1.1); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(90,175,255,0.78)'; ctx.lineWidth = s*0.15;
+      ctx.beginPath(); ctx.moveTo(-s*2.0,s*0.18); ctx.lineTo(s*1.8,0); ctx.stroke();
+      ctx.fillStyle = 'rgba(75,135,220,0.48)';
+      ctx.beginPath(); ctx.ellipse(s*0.5,s*0.55,s*0.48,s*0.2,-0.3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*1.9,-s*0.2,s*0.28,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#001133'; ctx.beginPath(); ctx.arc(s*1.95,-s*0.2,s*0.14,0,Math.PI*2); ctx.fill();
+    },
+
+    // 深淵鯊 — near-black abyss shark with pale belly and photophores
+    abyss_shark(ctx, sz, color) {
+      const s = sz;
+      ctx.fillStyle = color; ctx.strokeStyle = 'rgba(0,0,18,0.55)'; ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(s*2.4,0);
+      ctx.bezierCurveTo(s*2.4,-s*0.6,s*0.2,-s*0.95,-s*1.8,-s*0.25);
+      ctx.lineTo(-s*2.7,0); ctx.lineTo(-s*1.8,s*0.65);
+      ctx.bezierCurveTo(s*0.2,s*0.95,s*2.4,s*0.6,s*2.4,0);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(75,100,130,0.48)';
+      ctx.beginPath(); ctx.ellipse(s*0.8,s*0.18,s*1.1,s*0.36,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(s*0.2,-s*0.95); ctx.lineTo(s*0.85,-s*2.45); ctx.lineTo(s*1.55,-s*0.95); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s*0.7,s*0.88); ctx.lineTo(s*1.75,s*1.88); ctx.lineTo(s*0.1,s*0.95); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-s*2.7,0); ctx.lineTo(-s*3.8,-s*1.3); ctx.lineTo(-s*3.15,0); ctx.lineTo(-s*3.55,s*0.8);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(95,158,255,0.78)';
+      [s*0.3,s*0.78,s*1.28,s*1.72,-s*0.18].forEach((x,i)=>{
+        ctx.beginPath(); ctx.arc(x,s*0.12+Math.sin(i)*s*0.1,s*0.085,0,Math.PI*2); ctx.fill();
+      });
+      ctx.strokeStyle = 'rgba(18,28,48,0.68)'; ctx.lineWidth = s*0.1;
+      for (let i=0;i<3;i++) {
+        const gx = s*1.6 - i*s*0.35;
+        ctx.beginPath(); ctx.moveTo(gx,-s*0.5); ctx.lineTo(gx-s*0.1,s*0.4); ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(95,175,255,0.92)'; ctx.beginPath(); ctx.arc(s*1.9,-s*0.25,s*0.28,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#000820'; ctx.beginPath(); ctx.arc(s*1.95,-s*0.25,s*0.14,0,Math.PI*2); ctx.fill();
+    },
+
+    // 海龍 — azure sea dragon, serpentine with webbed fins and leaf appendages
+    sea_dragon(ctx, sz, color) {
+      const s = sz;
+      ctx.strokeStyle = 'rgba(70,195,255,0.14)'; ctx.lineWidth = s*1.15; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(s*2.3,-s*0.3);
+      ctx.bezierCurveTo(s*1.5,-s*0.9,-s*0.5,s*0.8,-s*1.5,s*0.25);
+      ctx.bezierCurveTo(-s*2.2,-s*0.25,-s*2.8,-s*0.3,-s*3.2,0);
+      ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = s*0.62;
+      ctx.beginPath();
+      ctx.moveTo(s*2.3,-s*0.3);
+      ctx.bezierCurveTo(s*1.5,-s*0.9,-s*0.5,s*0.8,-s*1.5,s*0.25);
+      ctx.bezierCurveTo(-s*2.2,-s*0.25,-s*2.8,-s*0.3,-s*3.2,0);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = 'rgba(115,215,255,0.72)';
+      [[s*1.6,-s*0.6],[s*0.3,-s*0.65],[-s*0.85,s*0.28]].forEach(([fx,fy])=>{
+        ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(fx-s*0.15,fy-s*1.3); ctx.lineTo(fx-s*0.5,fy); ctx.closePath(); ctx.fill();
+      });
+      ctx.fillStyle = 'rgba(95,195,255,0.5)';
+      [[s*1.0,-s*0.25],[s*0.0,s*0.35],[-s*0.9,0]].forEach(([fx,fy])=>{
+        ctx.beginPath(); ctx.ellipse(fx+s*0.38,fy-s*0.5,s*0.52,s*0.2,-0.65,0,Math.PI*2); ctx.fill();
+      });
+      ctx.fillStyle = 'rgba(175,238,255,0.42)';
+      [[s*1.9,-s*0.35],[s*0.7,-s*0.6],[-s*0.1,s*0.45],[-s*1.1,s*0.2]].forEach(([x,y])=>{
+        ctx.beginPath(); ctx.arc(x,y,s*0.2,0,Math.PI*2); ctx.fill();
+      });
+      ctx.strokeStyle = 'rgba(175,238,255,0.9)'; ctx.lineWidth = s*0.12; ctx.lineCap = 'round';
+      [[s*2.3,-s*0.3,s*3.2,-s*1.1],[s*2.3,-s*0.3,s*3.2,s*0.4]].forEach(([x1,y1,x2,y2])=>{
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      });
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*2.05,-s*0.38,s*0.32,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#00ccff'; ctx.beginPath(); ctx.arc(s*2.1,-s*0.38,s*0.16,0,Math.PI*2); ctx.fill();
+    },
   },
 
   // ── Rod sprites ─────────────────────────────────────────────────────
