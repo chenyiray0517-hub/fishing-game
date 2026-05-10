@@ -22,7 +22,7 @@ class HarborScene {
 
     this.QUEST_NPCS = [
       { id: 'ocean',  x: 382, y: 368 },
-      { id: 'ocean2', x: 95,  y: 368 },
+      { id: 'ocean2', x: 165, y: 390 },
     ];
 
     this.DIALOGUE_NPCS = [
