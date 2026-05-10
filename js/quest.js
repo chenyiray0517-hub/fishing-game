@@ -69,14 +69,24 @@ class QuestUI {
       .map(([id, q]) => ({ id, q }));
   }
 
+  // true if any quest (other than npcId) is currently accepted
+  _otherActive(npcId, player) {
+    return Object.entries(player.activeQuests)
+      .some(([id, q]) => id !== npcId && q && q.accepted);
+  }
+
   handleKey(key, player) {
     if (!this.open) return false;
     if (key === 'Escape') { this.close(); return true; }
     if (key === 'e' || key === 'E') {
       const q = player.activeQuests[this.npcId];
       if (!q) { this.close(); return true; }
-      if (!q.accepted) { this._accept(this.npcId, player); return true; }
-      if (this._count(q.fishId, player) >= q.qty) { this._claim(this.npcId, player); return true; }
+      if (!q.accepted && !this._otherActive(this.npcId, player)) {
+        this._accept(this.npcId, player); return true;
+      }
+      if (q.accepted && this._count(q.fishId, player) >= q.qty) {
+        this._claim(this.npcId, player); return true;
+      }
       this.close(); return true;
     }
     return true;
@@ -95,8 +105,9 @@ class QuestUI {
       if (p.x > PX + PW/2 - 170 && p.x < PX + PW/2 - 20 &&
           p.y > PY + PH - 106 && p.y < PY + PH - 54)
         this._decline(this.npcId, player);
-      // Accept button (right)
-      if (p.x > PX + PW/2 + 20 && p.x < PX + PW/2 + 170 &&
+      // Accept button (right) — only when no other quest is active
+      if (!this._otherActive(this.npcId, player) &&
+          p.x > PX + PW/2 + 20 && p.x < PX + PW/2 + 170 &&
           p.y > PY + PH - 106 && p.y < PY + PH - 54)
         this._accept(this.npcId, player);
     } else if (this._count(q.fishId, player) >= q.qty) {
@@ -177,7 +188,10 @@ class QuestUI {
         ctx.fillStyle = '#334455'; ctx.font = '12px sans-serif'; ctx.textAlign = 'right';
         ctx.fillText(closeHint, PX + PW - 16, PY + PH - 12);
       } else {
-        // Not yet accepted — Accept / Decline buttons
+        // Not yet accepted
+        const blocked = this._otherActive(npcId, player);
+
+        // Decline button (always shown)
         const decX = PX + PW/2 - 170, decY = PY + PH - 106, decW = 150, decH = 52;
         ctx.fillStyle = 'rgba(70,40,40,0.85)';
         ctx.beginPath(); ctx.roundRect(decX, decY, decW, decH, 10); ctx.fill();
@@ -186,15 +200,24 @@ class QuestUI {
         ctx.fillStyle = '#ddaaaa'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText('拒絕委託', decX + decW/2, decY + 34);
 
+        // Accept button — greyed out when blocked
         const accX = PX + PW/2 + 20, accY = PY + PH - 106, accW = 150, accH = 52;
-        ctx.fillStyle = 'rgba(20,110,55,0.88)';
+        ctx.fillStyle = blocked ? 'rgba(40,50,60,0.75)' : 'rgba(20,110,55,0.88)';
         ctx.beginPath(); ctx.roundRect(accX, accY, accW, accH, 10); ctx.fill();
-        ctx.strokeStyle = '#44cc88'; ctx.lineWidth = 2;
+        ctx.strokeStyle = blocked ? '#445566' : '#44cc88'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.roundRect(accX, accY, accW, accH, 10); ctx.stroke();
-        ctx.fillStyle = '#aaffcc'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillStyle = blocked ? '#556677' : '#aaffcc';
+        ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText('接受委託', accX + accW/2, accY + 34);
 
-        const kHint = touch.isMobile ? '點擊按鈕選擇' : '[E] 接受  [ESC] 關閉';
+        if (blocked) {
+          ctx.fillStyle = '#ff8866'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('⚠ 請先完成目前的委託', PX + PW/2, PY + PH - 26);
+        }
+
+        const kHint = blocked
+          ? (touch.isMobile ? '[ESC] 關閉' : '[ESC] 關閉')
+          : (touch.isMobile ? '點擊按鈕選擇' : '[E] 接受  [ESC] 關閉');
         ctx.fillStyle = '#445566'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText(kHint, PX + PW/2, PY + PH - 12);
       }
