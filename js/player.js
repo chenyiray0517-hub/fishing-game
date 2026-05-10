@@ -142,8 +142,11 @@ class Player {
       this.unlockedAreas  = d.unlockedAreas  ?? this.unlockedAreas;
       this.caughtIds      = d.caughtIds      ?? this.caughtIds;
       if (d.activeQuests) {
-        for (const k of Object.keys(this.activeQuests))
-          this.activeQuests[k] = d.activeQuests[k] ?? null;
+        for (const k of Object.keys(this.activeQuests)) {
+          const q = d.activeQuests[k];
+          // migrate old saves that lacked `accepted` → treat as accepted
+          this.activeQuests[k] = q ? { ...q, accepted: q.accepted ?? true } : null;
+        }
       }
       // Sanitize: equippedRod must be owned
       if (!this.ownedRods.includes(this.equippedRod))

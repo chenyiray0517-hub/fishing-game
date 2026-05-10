@@ -1,7 +1,8 @@
 class QuestUI {
   constructor() {
-    this.open  = false;
-    this.npcId = null;
+    this.open    = false;   // quest panel overlay open
+    this.npcId   = null;
+    this.hudOpen = false;   // mobile: left-side HUD expanded
   }
 
   openFor(npcId, player) {
@@ -18,7 +19,7 @@ class QuestUI {
     const fishCfg = CONFIG.FISH.find(f => f.id === fishId);
     const qty     = _questQty(fishCfg.difficulty);
     const reward  = Math.ceil(fishCfg.value * qty * 1.5);
-    player.activeQuests[npcId] = { fishId, qty, reward };
+    player.activeQuests[npcId] = { fishId, qty, reward, accepted: false };
     player.save();
   }
 
@@ -26,9 +27,23 @@ class QuestUI {
     return player.fish.filter(f => f.id === fishId).length;
   }
 
-  _claim(npcId, player) {
+  _accept(npcId, player) {
     const q = player.activeQuests[npcId];
     if (!q) return;
+    q.accepted = true;
+    player.save();
+    this.close();
+  }
+
+  _decline(npcId, player) {
+    player.activeQuests[npcId] = null;
+    player.save();
+    this.close();
+  }
+
+  _claim(npcId, player) {
+    const q = player.activeQuests[npcId];
+    if (!q || !q.accepted) return;
     if (this._count(q.fishId, player) < q.qty) return;
     let removed = 0;
     player.fish = player.fish.filter(f => {
@@ -41,19 +56,28 @@ class QuestUI {
     this.close();
   }
 
-  // Returns the marker type for a given npcId: '!' | '✓' | null
+  // '!' = new/pending, '✓' = claimable, null = in-progress
   markerFor(npcId, player) {
     const q = player.activeQuests[npcId];
-    if (!q) return '!';
+    if (!q || !q.accepted) return '!';
     return this._count(q.fishId, player) >= q.qty ? '✓' : null;
+  }
+
+  _activeList(player) {
+    return Object.entries(player.activeQuests)
+      .filter(([, q]) => q && q.accepted)
+      .map(([id, q]) => ({ id, q }));
   }
 
   handleKey(key, player) {
     if (!this.open) return false;
-    if (key === 'Escape' || key === 'e' || key === 'E') { this.close(); return true; }
-    if ((key === ' ' || key === 'Enter') && this.npcId) {
+    if (key === 'Escape') { this.close(); return true; }
+    if (key === 'e' || key === 'E') {
       const q = player.activeQuests[this.npcId];
-      if (q && this._count(q.fishId, player) >= q.qty) this._claim(this.npcId, player);
+      if (!q) { this.close(); return true; }
+      if (!q.accepted) { this._accept(this.npcId, player); return true; }
+      if (this._count(q.fishId, player) >= q.qty) { this._claim(this.npcId, player); return true; }
+      this.close(); return true;
     }
     return true;
   }
@@ -61,16 +85,28 @@ class QuestUI {
   handleTouch(p, player) {
     if (!this.open) return;
     const PX = 40, PY = 50, PW = 720, PH = 500;
+    // X button
     if (Math.hypot(p.x - (PX + PW - 20), p.y - (PY + 20)) < 18) { this.close(); return; }
     const q = player.activeQuests[this.npcId];
     if (!q) return;
-    if (this._count(q.fishId, player) >= q.qty) {
-      const btnX = PX + PW / 2 - 110, btnY = PY + PH - 100;
-      if (p.x > btnX && p.x < btnX + 220 && p.y > btnY && p.y < btnY + 56)
+
+    if (!q.accepted) {
+      // Decline button (left)
+      if (p.x > PX + PW/2 - 170 && p.x < PX + PW/2 - 20 &&
+          p.y > PY + PH - 106 && p.y < PY + PH - 54)
+        this._decline(this.npcId, player);
+      // Accept button (right)
+      if (p.x > PX + PW/2 + 20 && p.x < PX + PW/2 + 170 &&
+          p.y > PY + PH - 106 && p.y < PY + PH - 54)
+        this._accept(this.npcId, player);
+    } else if (this._count(q.fishId, player) >= q.qty) {
+      if (p.x > PX + PW/2 - 110 && p.x < PX + PW/2 + 110 &&
+          p.y > PY + PH - 106 && p.y < PY + PH - 50)
         this._claim(this.npcId, player);
     }
   }
 
+  // ── Panel overlay ────────────────────────────────────────────────────
   render(ctx, player) {
     if (!this.open) return;
     const npcId = this.npcId;
@@ -78,7 +114,6 @@ class QuestUI {
     const q     = player.activeQuests[npcId];
     const PX = 40, PY = 50, PW = 720, PH = 500;
 
-    // Panel
     ctx.fillStyle = 'rgba(8,16,36,0.97)';
     ctx.beginPath(); ctx.roundRect(PX, PY, PW, PH, 14); ctx.fill();
     ctx.strokeStyle = '#2a5080'; ctx.lineWidth = 2;
@@ -87,68 +122,133 @@ class QuestUI {
     // Title
     ctx.fillStyle = '#ffdd88'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(`${cfg.name} 的委託`, PX + PW / 2, PY + 44);
-
     ctx.strokeStyle = 'rgba(80,130,200,0.35)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(PX + 24, PY + 58); ctx.lineTo(PX + PW - 24, PY + 58); ctx.stroke();
 
     if (q) {
       const fishCfg  = CONFIG.FISH.find(f => f.id === q.fishId);
       const progress = this._count(q.fishId, player);
-      const done     = progress >= q.qty;
+      const done     = q.accepted && progress >= q.qty;
+      const n        = Math.min(Math.round(fishCfg.difficulty), 6);
 
       ctx.textAlign = 'left';
       ctx.fillStyle = '#aaddff'; ctx.font = '15px sans-serif';
-      ctx.fillText('委託內容', PX + 40, PY + 95);
+      ctx.fillText('委託內容', PX + 40, PY + 96);
       ctx.fillStyle = '#ffffff'; ctx.font = 'bold 20px sans-serif';
       ctx.fillText(`釣取 ${fishCfg.name} × ${q.qty} 條`, PX + 40, PY + 126);
 
       ctx.fillStyle = '#ffdd55'; ctx.font = '16px sans-serif';
-      ctx.fillText(`報酬：$${q.reward}`, PX + 40, PY + 168);
+      ctx.fillText(`報酬：$${q.reward}`, PX + 40, PY + 166);
+      ctx.fillStyle = '#556677'; ctx.font = '13px sans-serif';
+      ctx.fillText(`（市場售價 $${fishCfg.value * q.qty}，多出 $${q.reward - fishCfg.value * q.qty}）`, PX + 40, PY + 186);
 
-      const n = Math.min(Math.round(fishCfg.difficulty), 6);
-      ctx.fillStyle = '#ff9944';
-      ctx.fillText('難度：' + '★'.repeat(n) + '☆'.repeat(6 - n), PX + 40, PY + 198);
+      ctx.fillStyle = '#ff9944'; ctx.font = '16px sans-serif';
+      ctx.fillText('難度：' + '★'.repeat(n) + '☆'.repeat(6 - n), PX + 40, PY + 214);
 
-      ctx.fillStyle = done ? '#44ff88' : '#aaddff'; ctx.font = '15px sans-serif';
-      ctx.fillText(`進度：${progress} / ${q.qty}`, PX + 40, PY + 248);
+      if (q.accepted) {
+        // Progress bar
+        ctx.fillStyle = done ? '#44ff88' : '#aaddff'; ctx.font = '15px sans-serif';
+        ctx.fillText(`進度：${progress} / ${q.qty}`, PX + 40, PY + 258);
+        const barW = PW - 80, barH = 24, barX = PX + 40, barY = PY + 270;
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 6); ctx.fill();
+        if (progress > 0) {
+          ctx.fillStyle = done ? '#44ff88' : '#3388ff';
+          ctx.beginPath(); ctx.roundRect(barX, barY, Math.min(progress / q.qty, 1) * barW, barH, 6); ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 6); ctx.stroke();
 
-      // Progress bar
-      const barW = PW - 80, barH = 24, barX = PX + 40, barY = PY + 260;
-      ctx.fillStyle = 'rgba(255,255,255,0.06)';
-      ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 6); ctx.fill();
-      const fill = Math.min(progress / q.qty, 1) * barW;
-      if (fill > 0) {
-        ctx.fillStyle = done ? '#44ff88' : '#3388ff';
-        ctx.beginPath(); ctx.roundRect(barX, barY, fill, barH, 6); ctx.fill();
-      }
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 6); ctx.stroke();
-
-      if (done) {
-        const blink  = Math.floor(Date.now() / 400) % 2;
-        const btnX = PX + PW / 2 - 110, btnY = PY + PH - 100, btnW = 220, btnH = 56;
-        ctx.fillStyle = blink ? 'rgba(30,180,80,0.90)' : 'rgba(20,140,60,0.80)';
-        ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 12); ctx.fill();
-        ctx.strokeStyle = '#55ffaa'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 12); ctx.stroke();
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('完成任務！領取報酬', PX + PW / 2, PY + PH - 62);
+        if (done) {
+          const blink = Math.floor(Date.now() / 400) % 2;
+          const btnX = PX + PW/2 - 110, btnY = PY + PH - 106, btnW = 220, btnH = 52;
+          ctx.fillStyle = blink ? 'rgba(30,180,80,0.90)' : 'rgba(20,140,60,0.80)';
+          ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 12); ctx.fill();
+          ctx.strokeStyle = '#55ffaa'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(btnX, btnY, btnW, btnH, 12); ctx.stroke();
+          ctx.fillStyle = '#fff'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('完成任務！領取報酬', PX + PW/2, btnY + 34);
+        } else {
+          ctx.fillStyle = '#445566'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('繼續釣魚後回來交付', PX + PW/2, PY + PH - 68);
+        }
+        // Close hint
+        const closeHint = touch.isMobile ? '右上角 ✕ 關閉' : '[ESC] 關閉';
+        ctx.fillStyle = '#334455'; ctx.font = '12px sans-serif'; ctx.textAlign = 'right';
+        ctx.fillText(closeHint, PX + PW - 16, PY + PH - 12);
       } else {
-        ctx.fillStyle = '#445566'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('繼續釣魚後回來交付', PX + PW / 2, PY + PH - 62);
+        // Not yet accepted — Accept / Decline buttons
+        const decX = PX + PW/2 - 170, decY = PY + PH - 106, decW = 150, decH = 52;
+        ctx.fillStyle = 'rgba(70,40,40,0.85)';
+        ctx.beginPath(); ctx.roundRect(decX, decY, decW, decH, 10); ctx.fill();
+        ctx.strokeStyle = '#886666'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(decX, decY, decW, decH, 10); ctx.stroke();
+        ctx.fillStyle = '#ddaaaa'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('拒絕委託', decX + decW/2, decY + 34);
+
+        const accX = PX + PW/2 + 20, accY = PY + PH - 106, accW = 150, accH = 52;
+        ctx.fillStyle = 'rgba(20,110,55,0.88)';
+        ctx.beginPath(); ctx.roundRect(accX, accY, accW, accH, 10); ctx.fill();
+        ctx.strokeStyle = '#44cc88'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(accX, accY, accW, accH, 10); ctx.stroke();
+        ctx.fillStyle = '#aaffcc'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('接受委託', accX + accW/2, accY + 34);
+
+        const kHint = touch.isMobile ? '點擊按鈕選擇' : '[E] 接受  [ESC] 關閉';
+        ctx.fillStyle = '#445566'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(kHint, PX + PW/2, PY + PH - 12);
       }
     }
-
-    // Close hint
-    const hint = touch.isMobile ? '右上角 ✕ 關閉' : '[E / ESC] 關閉';
-    ctx.fillStyle = '#334455'; ctx.font = '12px sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText(hint, PX + PW - 16, PY + PH - 12);
 
     // X button
     ctx.fillStyle = 'rgba(80,100,130,0.55)';
     ctx.beginPath(); ctx.arc(PX + PW - 20, PY + 20, 14, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#aabbcc'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('✕', PX + PW - 20, PY + 25);
+  }
+
+  // ── Left-side HUD (desktop always on; mobile toggle) ─────────────────
+  renderHUD(ctx, player) {
+    const list = this._activeList(player);
+    if (list.length === 0) return;
+    if (touch.isMobile && !this.hudOpen) return;
+
+    const PX = 8, startY = 92, W = 198, rowH = 56, headerH = 30;
+    const totalH = headerH + list.length * rowH + 8;
+
+    ctx.fillStyle = 'rgba(8,20,40,0.88)';
+    ctx.beginPath(); ctx.roundRect(PX, startY, W, totalH, 8); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,90,160,0.55)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(PX, startY, W, totalH, 8); ctx.stroke();
+
+    ctx.fillStyle = '#aaddff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('📋 進行中委託', PX + 10, startY + 20);
+
+    list.forEach(({ id, q }, i) => {
+      const cfg      = CONFIG.QUEST_NPC_DATA[id];
+      const fishCfg  = CONFIG.FISH.find(f => f.id === q.fishId);
+      const progress = this._count(q.fishId, player);
+      const done     = progress >= q.qty;
+      const ry       = startY + headerH + i * rowH;
+
+      ctx.strokeStyle = 'rgba(60,100,160,0.28)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(PX + 8, ry); ctx.lineTo(PX + W - 8, ry); ctx.stroke();
+
+      ctx.fillStyle = '#667788'; ctx.font = '11px sans-serif';
+      ctx.fillText(cfg.name, PX + 10, ry + 15);
+
+      ctx.fillStyle = done ? '#44ff88' : '#eef2ff'; ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(`${fishCfg.name}  ${progress} / ${q.qty}`, PX + 10, ry + 31);
+
+      const bw = W - 20, bh = 5, bx = PX + 10, by = ry + 39;
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 2); ctx.fill();
+      const fill = Math.min(progress / q.qty, 1) * bw;
+      if (fill > 0) {
+        ctx.fillStyle = done ? '#44ff88' : '#3388ff';
+        ctx.beginPath(); ctx.roundRect(bx, by, fill, bh, 2); ctx.fill();
+      }
+    });
   }
 }
 

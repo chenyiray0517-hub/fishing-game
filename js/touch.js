@@ -32,6 +32,9 @@ const touch = {
   // 圖鑑按鈕 tap (per-frame)
   encyclopediaTapped: false,
 
+  // 任務按鈕 tap (per-frame)
+  questTapped: false,
+
   // Interact button bounding rect (set by harbor render each frame)
   _iRect: null,
 
@@ -97,6 +100,12 @@ const touch = {
       // 圖鑑按鈕（地圖右側）
       if (Math.hypot(p.x - 124, p.y - 68) < 22) {
         this.encyclopediaTapped = true;
+        continue;
+      }
+
+      // 任務按鈕（圖鑑右側）
+      if (Math.hypot(p.x - 172, p.y - 68) < 22) {
+        this.questTapped = true;
         continue;
       }
 
@@ -201,6 +210,7 @@ const touch = {
     this.backpackTapped     = false;
     this.mapTapped          = false;
     this.encyclopediaTapped = false;
+    this.questTapped        = false;
   },
 
   // ── Rendering ────────────────────────────────────────────────────────
@@ -214,6 +224,8 @@ const touch = {
     this._drawMapBtn(ctx);
     // 圖鑑按鈕（地圖右側）
     this._drawEncyclopediaBtn(ctx);
+    // 任務按鈕（圖鑑右側）
+    this._drawQuestBtn(ctx);
 
     const sceneMap = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond };
     const fs = sceneMap[game.scene]?.fishing?.state ?? null;
@@ -239,6 +251,28 @@ const touch = {
     ctx.beginPath(); ctx.arc(bx, by, 20, 0, Math.PI * 2); ctx.stroke();
     ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
     ctx.fillStyle = '#fff'; ctx.fillText('🗺️', bx, by + 5);
+    ctx.restore();
+  },
+
+  _drawQuestBtn(ctx) {
+    const bx = 172, by = 68;
+    const activeCount = game.player
+      ? Object.values(game.player.activeQuests).filter(q => q && q.accepted).length
+      : 0;
+    const isOpen = game.quest?.hudOpen;
+    ctx.save();
+    ctx.fillStyle = isOpen ? 'rgba(180,120,20,0.72)' : 'rgba(20,40,80,0.55)';
+    ctx.beginPath(); ctx.arc(bx, by, 20, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = isOpen ? '#ffcc44' : 'rgba(100,140,200,0.5)'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(bx, by, 20, 0, Math.PI * 2); ctx.stroke();
+    ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff'; ctx.fillText('📋', bx, by + 5);
+    if (activeCount > 0 && !isOpen) {
+      ctx.fillStyle = '#ff4444';
+      ctx.beginPath(); ctx.arc(bx + 13, by - 13, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif';
+      ctx.fillText(String(activeCount), bx + 13, by - 10);
+    }
     ctx.restore();
   },
 

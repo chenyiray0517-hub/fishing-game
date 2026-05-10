@@ -267,6 +267,11 @@ function update() {
     else game.encyclopedia.open = true;
   }
 
+  // 任務 HUD 按鈕觸控
+  if (touch.questTapped && !game.dialogue.active) {
+    game.quest.hudOpen = !game.quest.hudOpen;
+  }
+
   // 圖鑑開啟時消耗觸控
   if (game.encyclopedia.open) {
     if (touch.shopTap) game.encyclopedia.handleTouch(touch.shopTap);
@@ -392,6 +397,7 @@ function render() {
 
   touch.render(ctx);
   renderSAN(ctx, game.player);
+  game.quest.renderHUD(ctx, game.player);
   game.backpack.render(ctx, game.player);
   game.encyclopedia.render(ctx, game.player);
   game.quest.render(ctx, game.player);
