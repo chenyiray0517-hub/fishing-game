@@ -49,6 +49,9 @@ function init() {
     const r = game.canvas.getBoundingClientRect();
     const mx = (e.clientX - r.left) * CONFIG.W / r.width;
     const my = (e.clientY - r.top)  * CONFIG.H / r.height;
+    const mp = { x: mx, y: my };
+    // Quest panel buttons (accept / decline / claim / close)
+    if (game.quest.open) { game.quest.handleTouch(mp, game.player); return; }
     // Quest HUD toggle button (desktop only)
     if (!touch.isMobile && mx >= 8 && mx <= 148 && my >= 92 && my <= 120) {
       game.quest.hudOpen = !game.quest.hudOpen;
