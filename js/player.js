@@ -32,6 +32,10 @@ class Player {
     // Quest state — saved  { lake: {fishId,qty,reward}|null, ... }
     this.activeQuests = { lake: null, beach: null, pond: null, ocean: null, ocean2: null };
 
+    // Weapons — saved
+    this.ownedSwords  = [];
+    this.equippedSword = null;
+
     // Lucky charm active — ephemeral
     this.luckyCharmActive = false;
 
@@ -45,10 +49,11 @@ class Player {
     this.load();
   }
 
-  get rod()       { return CONFIG.RODS.find(r => r.id === this.equippedRod); }
-  get baitCfg()   { return CONFIG.BAITS.find(b => b.id === this.equippedBait); }
-  get baitCount() { return this.bait[this.equippedBait] || 0; }
-  get totalBait() { return Object.values(this.bait).reduce((s,v)=>s+v,0); }
+  get rod()        { return CONFIG.RODS.find(r => r.id === this.equippedRod); }
+  get baitCfg()    { return CONFIG.BAITS.find(b => b.id === this.equippedBait); }
+  get baitCount()  { return this.bait[this.equippedBait] || 0; }
+  get totalBait()  { return Object.values(this.bait).reduce((s,v)=>s+v,0); }
+  get swordCfg()   { return this.equippedSword ? CONFIG.SWORDS.find(s => s.id === this.equippedSword) : null; }
 
   useBait() {
     if (this.bait[this.equippedBait] > 0) { this.bait[this.equippedBait]--; return true; }
@@ -120,6 +125,8 @@ class Player {
         unlockedAreas:  this.unlockedAreas,
         caughtIds:      this.caughtIds,
         activeQuests:   this.activeQuests,
+        ownedSwords:    this.ownedSwords,
+        equippedSword:  this.equippedSword,
       }));
       this._savedAt = Date.now();
     } catch(e) {}
@@ -141,6 +148,8 @@ class Player {
       this.items          = d.items          ?? this.items;
       this.unlockedAreas  = d.unlockedAreas  ?? this.unlockedAreas;
       this.caughtIds      = d.caughtIds      ?? this.caughtIds;
+      this.ownedSwords    = d.ownedSwords    ?? this.ownedSwords;
+      this.equippedSword  = d.equippedSword  ?? this.equippedSword;
       if (d.activeQuests) {
         for (const k of Object.keys(this.activeQuests)) {
           const q = d.activeQuests[k];

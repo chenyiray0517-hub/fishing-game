@@ -107,6 +107,21 @@ class ShopUI {
         ];
       }
 
+      case 'sword':
+        return CONFIG.SWORDS.map(s => {
+          const owned    = player.ownedSwords.includes(s.id);
+          const equipped = player.equippedSword === s.id;
+          return {
+            label:      s.name,
+            sub:        s.craft ? '無法製作' : owned ? (equipped ? '[裝備中]' : '[已擁有]') : `$${s.price}`,
+            hint:       `攻擊力 ${s.power}`,
+            owned, equipped,
+            craft:      s.craft,
+            swatchColor: s.color,
+            data: s,
+          };
+        });
+
       default: return [];
     }
   }
@@ -148,6 +163,18 @@ class ShopUI {
       if (player.money < 300) { this.notify('金幣不足！', false); return; }
       player.money -= 300; player.energyDrinks++;
       player.save(); this.notify(`購買能量飲料！庫存 ${player.energyDrinks}/3`);
+
+    } else if (this.type === 'sword') {
+      const s = item.data;
+      if (item.craft)    { this.notify('無法製作（尚未解鎖合成方式）', false); return; }
+      if (item.equipped) { this.notify('已裝備中'); return; }
+      if (item.owned)    { player.equippedSword = s.id; player.save(); this.notify(`裝備 ${s.name}`); return; }
+      if (player.money < s.price) { this.notify('金幣不足！', false); return; }
+      player.money -= s.price;
+      player.ownedSwords.push(s.id);
+      player.equippedSword = s.id;
+      player.save();
+      this.notify(`購買 ${s.name}！`);
 
     } else if (this.type === 'market') {
       if (item.data === 'sell_all') {
@@ -197,7 +224,7 @@ class ShopUI {
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.roundRect(x, y, W, H, 12); ctx.fill(); ctx.stroke();
 
-    const titles = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場', energy:'能量飲料販售' };
+    const titles = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場', energy:'能量飲料販售', sword:'⚔️ 武器商人' };
     ctx.fillStyle = '#88ccff'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(titles[this.type]||'', cx, y+34);
 
@@ -234,23 +261,37 @@ class ShopUI {
       }
 
       const locked = !!item.locked;
+
+      // Sword colour swatch on the left edge
+      if (item.swatchColor) {
+        ctx.fillStyle = item.swatchColor;
+        ctx.fillRect(x + 8, iy + 10, 6, 38);
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect(x + 8, iy + 10, 6, 19);
+      }
+      const textX = item.swatchColor ? x + 22 : x + 22;
+
       ctx.textAlign = 'left';
       ctx.font = 'bold 15px sans-serif';
       ctx.fillStyle = item.equipped ? '#ffd700'
                     : item.owned    ? '#88ff88'
+                    : item.craft    ? '#7a6a8a'
                     : item.full     ? '#888'
                     : locked        ? '#777799'
                     : '#ddeeff';
-      ctx.fillText(item.label, x+22, iy+22);
+      ctx.fillText(item.label, textX, iy + 22);
 
       ctx.font = '12px sans-serif';
       ctx.fillStyle = locked ? '#556677' : '#8899aa';
-      if (item.hint) ctx.fillText(item.hint, x+22, iy+40);
+      if (item.hint) ctx.fillText(item.hint, textX, iy + 40);
 
       ctx.textAlign = 'right';
       ctx.font = 'bold 14px sans-serif';
-      ctx.fillStyle = item.full ? '#666' : locked ? '#666699' : '#ffdd55';
-      ctx.fillText(item.sub, x+W-18, iy+24);
+      ctx.fillStyle = item.craft  ? '#7a6a8a'
+                    : item.full   ? '#666'
+                    : locked      ? '#666699'
+                    : '#ffdd55';
+      ctx.fillText(item.sub, x + W - 18, iy + 24);
     }
 
     // Scroll down indicator

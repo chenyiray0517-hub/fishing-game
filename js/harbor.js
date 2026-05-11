@@ -17,6 +17,9 @@ class HarborScene {
       { x:600, y:88, w:152, h:148, type:'market',  label:'魚市場',   color:'#2e1818', roof:'#7a2020', winCol:'#ffeec8' },
     ];
 
+    // 武器商人 NPC（碼頭廣場中央）
+    this.SWORD_NPC = { x: 490, y: 275 };
+
     this.waveOff = 0;
     this.bobT    = 0;
 
@@ -81,6 +84,8 @@ class HarborScene {
     if (Math.hypot(x - this.MAP_PROP.x, y - this.MAP_PROP.y) < 62) return { type: 'map' };
     // Lake path (right side, below fish market)
     if (Math.hypot(x - (CONFIG.W - 32), y - 328) < 78) return { type: 'lake' };
+    // 武器商人
+    if (Math.hypot(x - this.SWORD_NPC.x, y - this.SWORD_NPC.y) < 68) return { type: 'shop', shopType: 'sword' };
     return null;
   }
 
@@ -246,6 +251,8 @@ class HarborScene {
     this._renderDialogueNPCs(ctx);
     // 任務 NPC 繪製
     this._renderQuestNPCs(ctx, player);
+    // 武器商人 NPC
+    this._renderSwordNPC(ctx);
 
     // Nearby prompt
     const qNPCId = this.nearbyQuestNPC(player);
@@ -264,7 +271,7 @@ class HarborScene {
       ctx.textAlign = 'center'; ctx.fillText(label, player.x, player.y - 44);
       touch.setInteractRect(bx - 10, by - 10, tw + 20, 48);
     } else if (n) {
-      const SHOP_LABELS = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場' };
+      const SHOP_LABELS = { rod:'釣竿商店', bait:'魚餌商店', upgrade:'升級商店', market:'魚市場', sword:'⚔️ 武器商人' };
       let labelText, locked = false;
       if (n.type === 'boat') {
         labelText = '出海（第一海）';
@@ -612,5 +619,55 @@ class HarborScene {
       ? '左搖桿移動  靠近建築後點上方按鈕互動  🎒背包  🗺️地圖'
       : 'WASD / 方向鍵 移動  E 互動  G 背包  M 地圖';
     ctx.fillText(hint, CONFIG.W/2, CONFIG.H-10);
+  }
+
+  _renderSwordNPC(ctx) {
+    const nx = this.SWORD_NPC.x, ny = this.SWORD_NPC.y;
+
+    // ── 武器展示架（NPC 左側） ────────────────────────────────────────
+    const rx = nx - 38, ry = ny - 24;
+    // 木製底座
+    ctx.fillStyle = '#5a3508'; ctx.fillRect(rx - 4, ry + 2, 8, 32);
+    ctx.fillStyle = '#7a5020'; ctx.fillRect(rx - 22, ry + 2, 44, 8);
+    // 三把展示劍（木 / 鋼 / 鑽石）
+    const displaySwords = [
+      { dx: -14, blade: '#a07820', tip: '#c8a840' },
+      { dx:   0, blade: '#c0c8d0', tip: '#e4eaf0' },
+      { dx:  14, blade: '#66ddee', tip: '#aaf6ff' },
+    ];
+    for (const { dx, blade, tip } of displaySwords) {
+      // 刀身
+      ctx.strokeStyle = blade; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(rx + dx, ry + 2); ctx.lineTo(rx + dx, ry - 26); ctx.stroke();
+      // 刀尖
+      ctx.fillStyle = tip;
+      ctx.beginPath();
+      ctx.moveTo(rx + dx - 2.5, ry - 26);
+      ctx.lineTo(rx + dx + 2.5, ry - 26);
+      ctx.lineTo(rx + dx, ry - 34);
+      ctx.closePath(); ctx.fill();
+      // 護手
+      ctx.strokeStyle = '#8a8a90'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(rx + dx - 7, ry - 6); ctx.lineTo(rx + dx + 7, ry - 6); ctx.stroke();
+      // 握柄
+      ctx.strokeStyle = '#5a3010'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(rx + dx, ry + 2); ctx.lineTo(rx + dx, ry + 12); ctx.stroke();
+    }
+    // 架子陰影
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.ellipse(rx, ny + 4, 26, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+    // ── NPC 本體 ─────────────────────────────────────────────────────
+    drawNPCSprite(ctx, nx, ny, '#3a1828', '#0a0814');
+
+    // 腰間小劍裝飾
+    ctx.strokeStyle = '#c8a020'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(nx + 9, ny - 14); ctx.lineTo(nx + 22, ny - 4); ctx.stroke();
+    ctx.fillStyle = '#8a6018';
+    ctx.beginPath(); ctx.moveTo(nx + 8, ny - 12); ctx.lineTo(nx + 12, ny - 16); ctx.lineTo(nx + 14, ny - 14); ctx.closePath(); ctx.fill();
+
+    // 姓名標籤
+    ctx.fillStyle = '#ffdd88'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('武器商人', nx, ny + 20);
   }
 }

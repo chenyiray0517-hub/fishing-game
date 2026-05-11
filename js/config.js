@@ -114,6 +114,18 @@ const CONFIG = {
               fish: ['eel','tuna','deep_marlin','swordfish','abyss_shark','sea_dragon'] },
   },
 
+  SWORDS: [
+    { id: 'wood',    name: '木頭劍', price: 100,   power: 8,   color: '#a07820', craft: false },
+    { id: 'stone',   name: '石頭劍', price: 350,   power: 18,  color: '#909090', craft: false },
+    { id: 'copper',  name: '銅劍',   price: 900,   power: 32,  color: '#c07830', craft: false },
+    { id: 'iron',    name: '鐵劍',   price: 2500,  power: 55,  color: '#a0aab0', craft: false },
+    { id: 'steel',   name: '鋼劍',   price: 6000,  power: 88,  color: '#d4dce4', craft: false },
+    { id: 'gold',    name: '金劍',   price: 14000, power: 135, color: '#ffd700', craft: false },
+    { id: 'diamond', name: '鑽石劍', price: 35000, power: 200, color: '#88eeff', craft: false },
+    { id: 'nether',  name: '獄髓劍', price: 0,     power: 320, color: '#aa44ee', craft: true  },
+    { id: 'myth',    name: '神話劍', price: 0,     power: 500, color: '#ff88cc', craft: true  },
+  ],
+
   START_MONEY: 150,
   START_BAIT_COUNT: 5,
 };
