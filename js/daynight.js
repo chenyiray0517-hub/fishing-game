@@ -1,10 +1,10 @@
 class DayNight {
   constructor() {
-    // 10 分鐘一輪：白天 6 分鐘、黃昏 1 分鐘、夜晚 2 分鐘、黎明 1 分鐘
+    // 10 分鐘一輪：白天 5 分鐘、黃昏 30 秒、夜晚 4 分鐘、黎明 30 秒
     this.CYCLE  = 600;
-    this.DUSK_S = 360;
-    this.DUSK_E = 420;
-    this.DAWN_S = 540;
+    this.DUSK_S = 300;
+    this.DUSK_E = 330;
+    this.DAWN_S = 570;
 
     // 上層星星（y<42）：港口場景可見（HUD 在左側），其他場景被 HUD 頂欄蓋住
     this._topStars = [
