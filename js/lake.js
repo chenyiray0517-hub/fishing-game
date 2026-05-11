@@ -9,7 +9,7 @@ class LakeScene {
     this.NPC = { x: 722, y: 215 };
 
     this.QUEST_NPC  = { id: 'lake', x: 168, y: 462 };
-    this.TRADER_NPC = { x: 750, y: 430 };
+    this.TRADER_NPC = { x: 690, y: 450 };
 
     this.DIALOGUE_NPCS = [
       { x: 155, y: 300, name: '賞鳥者', color: '#aaffaa',
@@ -481,13 +481,34 @@ class LakeScene {
   _renderTraderNPC(ctx) {
     const nx = this.TRADER_NPC.x, ny = this.TRADER_NPC.y;
     const w = 22, h = 32;
+    const t = Date.now();
 
-    // Aura glow
-    const aura = ctx.createRadialGradient(nx, ny - h + 7, 3, nx, ny - h + 7, 22);
-    aura.addColorStop(0, 'rgba(180,60,255,0.35)');
+    // Pulsing ground ring (very visible from a distance)
+    const pulse = (Math.sin(t / 500) + 1) / 2;
+    ctx.save();
+    ctx.globalAlpha = 0.35 + pulse * 0.25;
+    const ring = ctx.createRadialGradient(nx, ny, 8, nx, ny, 36);
+    ring.addColorStop(0, '#cc44ff');
+    ring.addColorStop(1, 'rgba(140,0,255,0)');
+    ctx.fillStyle = ring;
+    ctx.beginPath(); ctx.ellipse(nx, ny, 36, 16, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Floating "?" marker above head
+    const floatY = Math.sin(t / 700) * 4;
+    ctx.fillStyle = '#ffaaff';
+    ctx.shadowColor = '#cc00ff'; ctx.shadowBlur = 8;
+    ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('?', nx, ny - h - 10 + floatY);
+    ctx.shadowBlur = 0;
+
+    // Body aura glow
+    const aura = ctx.createRadialGradient(nx, ny - h + 7, 3, nx, ny - h + 7, 26);
+    aura.addColorStop(0, 'rgba(180,60,255,0.45)');
     aura.addColorStop(1, 'rgba(180,60,255,0)');
     ctx.fillStyle = aura;
-    ctx.fillRect(nx - 26, ny - h - 16, 52, 50);
+    ctx.fillRect(nx - 30, ny - h - 18, 60, 56);
 
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
@@ -524,12 +545,12 @@ class LakeScene {
     ctx.beginPath(); ctx.arc(nx + 3.5, ny - h + 7, glow, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Speech bubble
-    const bw = 106, bh = 24, bx = nx - bw - 8, by = ny - h - 38;
+    // Speech bubble (right side of NPC)
+    const bw = 106, bh = 24, bx = nx + 14, by = ny - h - 38;
     ctx.fillStyle = 'rgba(30,5,55,0.92)';
     ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.fill();
     ctx.strokeStyle = '#7722cc'; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(nx - 14, by + bh); ctx.lineTo(nx - 8, by + bh + 7); ctx.lineTo(nx - 2, by + bh); ctx.closePath();
+    ctx.beginPath(); ctx.moveTo(bx + 4, by + bh); ctx.lineTo(bx + 10, by + bh + 7); ctx.lineTo(bx + 16, by + bh); ctx.closePath();
     ctx.fillStyle = 'rgba(30,5,55,0.92)'; ctx.fill(); ctx.strokeStyle = '#7722cc'; ctx.stroke();
     ctx.fillStyle = '#cc88ff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('以物換幣...', bx + bw / 2, by + bh / 2 + 4);

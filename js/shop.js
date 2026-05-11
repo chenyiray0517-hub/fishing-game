@@ -108,23 +108,24 @@ class ShopUI {
         ];
       }
 
-      case 'sword':
-        return CONFIG.SWORDS.map((s, i) => {
+      case 'sword': {
+        const buyable = CONFIG.SWORDS.filter(s => !s.craft);
+        return buyable.map((s, i) => {
           const owned    = player.ownedSwords.includes(s.id);
           const equipped = player.equippedSword === s.id;
-          const prev     = i > 0 ? CONFIG.SWORDS[i - 1] : null;
-          const locked   = !s.craft && i > 0 && !player.ownedSwords.includes(prev.id);
+          const prev     = i > 0 ? buyable[i - 1] : null;
+          const locked   = i > 0 && !player.ownedSwords.includes(prev.id);
           return {
             label:      s.name,
-            sub:        s.craft ? '無法製作' : owned ? (equipped ? '[裝備中]' : '[已擁有]') : locked ? '🔒' : `$${s.price}`,
+            sub:        owned ? (equipped ? '[裝備中]' : '[已擁有]') : locked ? '🔒' : `$${s.price}`,
             hint:       locked ? `需先購買 ${prev.name}` : `攻擊力 ${s.power}`,
             owned, equipped,
-            craft:      s.craft,
             locked,
             swatchColor: s.color,
             data: s,
           };
         });
+      }
 
       default: return [];
     }
@@ -170,7 +171,6 @@ class ShopUI {
 
     } else if (this.type === 'sword') {
       const s = item.data;
-      if (item.craft)    { this.notify('無法製作（尚未解鎖合成方式）', false); return; }
       if (item.equipped) { this.notify('已裝備中'); return; }
       if (item.owned)    { player.equippedSword = s.id; player.save(); this.notify(`裝備 ${s.name}`); return; }
       if (item.locked)   { this.notify('需先購買前一把劍！', false); return; }
