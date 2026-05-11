@@ -36,6 +36,20 @@ function init() {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup',   e => { game.keys[e.key] = false; });
 
+  // Restore wave timer & monsters from last save (must be after scene objects created)
+  game.waveTimer = game.player._savedWaveTimer ?? 0;
+  const _savedScenes = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond };
+  for (const [k, s] of Object.entries(_savedScenes)) {
+    for (const md of (game.player._savedMonsters?.[k] ?? [])) {
+      const m = new Monster(md.type, md.x, md.y);
+      m.hp = md.hp; m.maxHp = md.maxHp;
+      s.monsterMgr.monsters.push(m);
+    }
+  }
+
+  // Save state when page is closed/refreshed
+  window.addEventListener('beforeunload', () => game.player.save());
+
   touch.init(game.canvas);
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
@@ -276,12 +290,15 @@ function update() {
     (game.daynight.nightAlpha > 0.3 || game.scene === 'pond');
   if (_isNightScene) {
     game.waveTimer++;
-    if (game.waveTimer >= 3600) { // 60 s × 60 fps
+    if (game.waveTimer >= 7200) { // 120 s × 60 fps = 2 分鐘
       game.waveTimer = 0;
       triggerWave();
     }
   }
   if (game.waveMsg.t > 0) game.waveMsg.t--;
+
+  // Auto-save every 30 seconds
+  if (Date.now() - game.player._savedAt > 30000) game.player.save();
 
   // Touch action button → space press (cast / bite)
   if (touch.drinkTapped) drinkEnergy();

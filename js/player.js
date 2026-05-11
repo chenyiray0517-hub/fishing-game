@@ -139,6 +139,21 @@ class Player {
 
   save() {
     try {
+      // Serialize live monsters from each scene (game is global)
+      const monsters = {};
+      if (typeof game !== 'undefined') {
+        const sm = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond };
+        for (const [k, s] of Object.entries(sm)) {
+          if (s?.monsterMgr) {
+            monsters[k] = s.monsterMgr.monsters
+              .filter(m => m.deathAlpha > 0)
+              .map(m => ({ type: m.type, x: Math.round(m.x), y: Math.round(m.y), hp: m.hp, maxHp: m.maxHp }));
+          }
+        }
+      }
+      const waveTimer = (typeof game !== 'undefined' && game.waveTimer != null)
+        ? game.waveTimer : (this._savedWaveTimer ?? 0);
+
       localStorage.setItem('fishingGame_v1', JSON.stringify({
         money:          this.money,
         ownedRods:      this.ownedRods,
@@ -154,6 +169,11 @@ class Player {
         activeQuests:   this.activeQuests,
         ownedSwords:    this.ownedSwords,
         equippedSword:  this.equippedSword,
+        san:            this.san,
+        sanTimer:       this.sanTimer,
+        deathTimer:     this.deathTimer,
+        waveTimer,
+        monsters,
       }));
       this._savedAt = Date.now();
     } catch(e) {}
@@ -177,6 +197,12 @@ class Player {
       this.caughtIds      = d.caughtIds      ?? this.caughtIds;
       this.ownedSwords    = d.ownedSwords    ?? this.ownedSwords;
       this.equippedSword  = d.equippedSword  ?? this.equippedSword;
+      this.san            = d.san            ?? 0;
+      this.sanTimer       = d.sanTimer       ?? 0;
+      this.deathTimer     = d.deathTimer     ?? -1;
+      // waveTimer & monsters need scene objects → restored later in init()
+      this._savedWaveTimer = d.waveTimer  ?? 0;
+      this._savedMonsters  = d.monsters   ?? {};
       if (d.activeQuests) {
         for (const k of Object.keys(this.activeQuests)) {
           const q = d.activeQuests[k];
