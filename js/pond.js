@@ -3,6 +3,7 @@ class PondScene {
     this.fishing  = new FishingGame();
     this.waveOff  = 0;
     this.mistOff  = 0;
+    this.monsterMgr = new MonsterManager('sprite', true);
     // 水潭橢圓
     this.POND = { cx: 400, cy: 310, rx: 195, ry: 140 };
     this.QUEST_NPC = { id: 'pond', x: 680, y: 490 };
@@ -50,6 +51,7 @@ class PondScene {
     this.waveOff += 0.014;
     this.mistOff += 0.006;
     for (const f of this.fireflies) f.phase += f.spd;
+    this.monsterMgr.update(player.x, player.y);
 
     if (this.fishing.state) {
       this.fishing.update(keys, spaceDown, player);
@@ -230,6 +232,7 @@ class PondScene {
     }
 
     this._renderPlayer(ctx, player);
+    this.monsterMgr.render(ctx);
     this.fishing.render(ctx);
     this._renderHUD(ctx, player);
   }

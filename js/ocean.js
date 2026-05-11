@@ -4,6 +4,7 @@ class OceanScene {
     this.waveOff = 0;
     this.bobT    = 0;
     this.sparkles= this.initSparkles();
+    this.monsterMgr = new MonsterManager('drowned');
   }
 
   initSparkles() {
@@ -23,6 +24,7 @@ class OceanScene {
   update(keys, spaceDown, player) {
     this.waveOff += 0.014;
     this.bobT    += 0.045;
+    this.monsterMgr.update(player.bx, player.by);
 
     if (this.fishing.state) {
       this.fishing.update(keys, spaceDown, player);
@@ -111,6 +113,7 @@ class OceanScene {
 
     this.renderBoat(ctx, player);
     game.daynight.applyOverlay(ctx);
+    this.monsterMgr.render(ctx);
     this.fishing.render(ctx);
     this.renderHUD(ctx, player);
   }

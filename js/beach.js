@@ -3,6 +3,7 @@ class BeachScene {
     this.fishing  = new FishingGame();
     this.waveOff  = 0;
     this.WATER_Y  = 285;
+    this.monsterMgr = new MonsterManager('zombie');
 
     this.QUEST_NPC = { id: 'beach', x: 540, y: 250 };
 
@@ -55,6 +56,7 @@ class BeachScene {
 
   update(keys, spaceDown, player) {
     this.waveOff += 0.018;
+    this.monsterMgr.update(player.x, player.y);
 
     if (this.fishing.state) {
       this.fishing.update(keys, spaceDown, player);
@@ -235,6 +237,7 @@ class BeachScene {
 
     this._renderPlayer(ctx, player);
     game.daynight.applyOverlay(ctx);
+    this.monsterMgr.render(ctx);
     this.fishing.render(ctx);
     this._renderHUD(ctx, player);
   }

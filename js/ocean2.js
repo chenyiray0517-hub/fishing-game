@@ -3,6 +3,7 @@ class Ocean2Scene {
     this.fishing  = new FishingGame();
     this.waveOff  = 0;
     this.bobT     = 0;
+    this.monsterMgr = new MonsterManager('drowned');
     // 生物發光粒子
     this.glows = Array.from({ length: 40 }, () => ({
       x: Math.random() * CONFIG.W,
@@ -23,6 +24,7 @@ class Ocean2Scene {
   update(keys, spaceDown, player) {
     this.waveOff += 0.012;
     this.bobT    += 0.04;
+    this.monsterMgr.update(player.bx, player.by);
 
     if (this.fishing.state) {
       this.fishing.update(keys, spaceDown, player);
@@ -133,6 +135,7 @@ class Ocean2Scene {
 
     this._renderBoat(ctx, player);
     game.daynight.applyOverlay(ctx);
+    this.monsterMgr.render(ctx);
     this.fishing.render(ctx);
     this._renderHUD(ctx, player);
   }

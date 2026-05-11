@@ -35,6 +35,12 @@ const touch = {
   // 任務按鈕 tap (per-frame)
   questTapped: false,
 
+  // 武器/釣竿切換 tap (per-frame)
+  modeTapped: false,
+
+  // 攻擊按鈕 tap (per-frame)
+  attackTapped: false,
+
   // Interact button bounding rect (set by harbor render each frame)
   _iRect: null,
 
@@ -138,6 +144,12 @@ const touch = {
         continue;
       }
 
+      // 武器/釣竿切換按鈕（左側，裝備劍後才顯示）
+      if (game.player?.equippedSword && Math.hypot(p.x - 38, p.y - (CONFIG.H - 155)) < 30) {
+        this.modeTapped = true;
+        continue;
+      }
+
       // Left-bottom quadrant → joystick
       if (p.x < CONFIG.W / 2 && p.y > CONFIG.H * 0.55) {
         const j = this.joystick;
@@ -148,11 +160,15 @@ const touch = {
         continue;
       }
 
-      // Right-bottom quadrant → action button
+      // Right-bottom quadrant → attack (sword mode) or action (rod mode)
       if (p.x > CONFIG.W / 2 && p.y > CONFIG.H * 0.55) {
-        this.actionTapped = true;
-        this.actionHeld   = true;
-        this.actionId     = t.identifier;
+        if (game.player?.mode === 'sword' && game.player?.equippedSword) {
+          this.attackTapped = true;
+        } else {
+          this.actionTapped = true;
+          this.actionHeld   = true;
+          this.actionId     = t.identifier;
+        }
         continue;
       }
     }
@@ -211,6 +227,8 @@ const touch = {
     this.mapTapped          = false;
     this.encyclopediaTapped = false;
     this.questTapped        = false;
+    this.modeTapped         = false;
+    this.attackTapped       = false;
   },
 
   // ── Rendering ────────────────────────────────────────────────────────
@@ -230,15 +248,18 @@ const touch = {
     const sceneMap = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond };
     const fs = sceneMap[game.scene]?.fishing?.state ?? null;
 
+    // 武器/釣竿切換格子（裝備劍後顯示）
+    if (game.player?.equippedSword) this._drawModeToggle(ctx);
+
     // During tug: fishing.js handles all tug UI; skip joystick/action btn
     if (fs === 'tug') return;
 
     // Joystick: show when not mid-cast
     if (!fs || fs === 'wait') this._drawJoystick(ctx);
 
-    // Action button: fishing scenes
-    const fishingScenes = ['ocean', 'ocean2', 'lake', 'beach', 'pond'];
-    if (fishingScenes.includes(game.scene)) this._drawActionBtn(ctx, fs);
+    // Action or attack button
+    const combatScenes = ['ocean', 'ocean2', 'lake', 'beach', 'pond'];
+    if (combatScenes.includes(game.scene)) this._drawActionBtn(ctx, fs);
   },
 
   _drawMapBtn(ctx) {
@@ -327,11 +348,53 @@ const touch = {
     ctx.restore();
   },
 
+  _drawModeToggle(ctx) {
+    const bx = 38, by = CONFIG.H - 155, r = 22;
+    const isWeapon = game.player?.mode === 'sword';
+    ctx.save();
+    ctx.fillStyle   = isWeapon ? 'rgba(180,30,30,0.72)' : 'rgba(30,80,150,0.58)';
+    ctx.strokeStyle = isWeapon ? '#ff8844' : 'rgba(100,160,255,0.6)';
+    ctx.lineWidth   = 1.8;
+    ctx.beginPath(); ctx.arc(bx, by, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(isWeapon ? '⚔️' : '🎣', bx, by + 5);
+    ctx.fillStyle = 'rgba(200,200,200,0.80)';
+    ctx.font = '8px sans-serif';
+    ctx.fillText(isWeapon ? '武器' : '釣竿', bx, by + r + 9);
+    ctx.restore();
+  },
+
   _drawActionBtn(ctx, fs) {
     const ax = CONFIG.W - 72, ay = CONFIG.H - 80, r = 44;
-    let label, bg, fg;
     const blink = Math.floor(Date.now() / 180) % 2;
 
+    // Sword mode: attack button
+    if (game.player?.mode === 'sword' && game.player?.equippedSword) {
+      const cd = game.player.attackCooldown;
+      const ready = cd <= 0;
+      const pulse = ready ? (Math.sin(Date.now() / 200) + 1) * 0.08 : 0;
+      ctx.save();
+      ctx.fillStyle   = `rgba(180,20,20,${0.52 + pulse})`;
+      ctx.strokeStyle = ready ? '#ff7744' : '#664422';
+      ctx.lineWidth   = 2.5;
+      ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = ready ? '#fff' : '#886655';
+      ctx.fillText('⚔️', ax, ay + 8);
+      if (!ready) {
+        const progress = 1 - cd / 25;
+        ctx.strokeStyle = 'rgba(255,140,40,0.85)'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(ax, ay, r - 4, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
+    // Rod mode: fishing button
+    let label, bg, fg;
     if (!fs) {
       const sceneMap = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond };
       const spot = sceneMap[game.scene]?.nearbySpot(game.player);

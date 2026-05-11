@@ -46,6 +46,13 @@ class Player {
     this.lying     = false;
     this.lyingTimer = 0;  // frames since last -1 san
 
+    // Combat — ephemeral (not saved)
+    this.hp = 100; this.maxHp = 100;
+    this.hitFlash = 0;
+    this.attackCooldown = 0;
+    this.attackAnim = 0;
+    this.mode = 'rod'; // 'rod' | 'sword'
+
     this.load();
   }
 
@@ -99,6 +106,24 @@ class Player {
     return CONFIG.ITEMS
       .filter(cfg => (this.items[cfg.id] || 0) > 0)
       .map(cfg => ({ cfg, count: this.items[cfg.id] }));
+  }
+
+  takeDamage(dmg) {
+    this.hp = Math.max(0, this.hp - dmg);
+    this.hitFlash = 18;
+    if (this.hp <= 0) {
+      this.hp = 100;
+      this.money = Math.floor(this.money * 0.8);
+      this.fish = [];
+      this.save();
+      for (const s of [game.ocean, game.ocean2, game.lake, game.beach, game.pond]) {
+        s.fishing.reset();
+        if (s.monsterMgr) for (const m of s.monsterMgr.monsters) m.dead = true;
+      }
+      game.scene = 'harbor';
+      this.x = game.harbor.BED.x;
+      this.y = game.harbor.BED.y;
+    }
   }
 
   unlockArea(area) {

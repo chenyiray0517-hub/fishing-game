@@ -126,6 +126,15 @@ const CONFIG = {
     { id: 'myth',    name: '神話劍', price: 0,     power: 500, color: '#ff88cc', craft: true  },
   ],
 
+  MONSTERS: {
+    zombie:  { name:'殭屍', hp:35, speed:0.65, damage:6,  spawnInterval:480, maxCount:5, reward:15,
+               color:'#3a5a18', headColor:'#5a8a28', legColor:'#253a10', eyeColor:'#ff4400', nameColor:'#ffaa44' },
+    drowned: { name:'溺屍', hp:45, speed:0.55, damage:8,  spawnInterval:540, maxCount:5, reward:20,
+               color:'#1a4a5a', headColor:'#2a7080', legColor:'#102840', eyeColor:'#00ffdd', nameColor:'#88ddff' },
+    sprite:  { name:'精靈', hp:20, speed:1.1,  damage:12, spawnInterval:400, maxCount:5, reward:25,
+               color:'#882aaa', headColor:'#bb55dd', legColor:'#661880', eyeColor:'#ffee00', nameColor:'#ffaaff' },
+  },
+
   START_MONEY: 150,
   START_BAIT_COUNT: 5,
 };

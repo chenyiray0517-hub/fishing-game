@@ -2,6 +2,7 @@ class LakeScene {
   constructor() {
     this.fishing  = new FishingGame();
     this.waveOff  = 0;
+    this.monsterMgr = new MonsterManager('zombie');
     // Lake ellipse
     this.LAKE = { cx: 490, cy: 360, rx: 215, ry: 150 };
     // NPC (energy drink vendor)
@@ -75,6 +76,7 @@ class LakeScene {
 
   update(keys, spaceDown, player) {
     this.waveOff += 0.016;
+    this.monsterMgr.update(player.x, player.y);
 
     if (this.fishing.state) {
       this.fishing.update(keys, spaceDown, player);
@@ -253,6 +255,7 @@ class LakeScene {
 
     this._renderPlayer(ctx, player);
     game.daynight.applyOverlay(ctx);
+    this.monsterMgr.render(ctx);
     this.fishing.render(ctx);
     this._renderHUD(ctx, player);
   }

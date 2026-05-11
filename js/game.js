@@ -57,6 +57,12 @@ function init() {
     // Quest HUD toggle button (desktop only)
     if (!touch.isMobile && mx >= 8 && mx <= 148 && my >= 92 && my <= 120) {
       game.quest.hudOpen = !game.quest.hudOpen;
+      return;
+    }
+    // Left click attack (PC only, sword mode)
+    if (e.button === 0 && !touch.isMobile && game.player.mode === 'sword' &&
+        !game.shop.open && !game.backpack.open && !game.gamemap.open && !game.dialogue.active) {
+      doPlayerAttack();
     }
   });
 
@@ -230,6 +236,9 @@ function handlePress(key) {
     }
   }
 
+  if (key === '1') { game.player.mode = 'rod'; return; }
+  if (key === '2') { if (game.player.equippedSword) game.player.mode = 'sword'; return; }
+
   if (key === 'f' || key === 'F') { drinkEnergy(); return; }
 }
 
@@ -248,6 +257,17 @@ function loop(ts) {
 function update() {
   // Apply virtual joystick to keyboard state
   touch.applyKeys(game.keys);
+
+  // Attack / mode toggle from touch
+  if (touch.attackTapped) doPlayerAttack();
+  if (touch.modeTapped) {
+    if (game.player.mode === 'rod' && game.player.equippedSword) game.player.mode = 'sword';
+    else game.player.mode = 'rod';
+  }
+
+  // Attack & anim cooldowns
+  if (game.player.attackCooldown > 0) game.player.attackCooldown--;
+  if (game.player.attackAnim > 0) game.player.attackAnim--;
 
   // Touch action button → space press (cast / bite)
   if (touch.drinkTapped) drinkEnergy();
@@ -406,12 +426,16 @@ function render() {
     game.pond.render(ctx, game.player);
   }
 
+  renderAttackAnim(ctx, game.player);
+
   if (game.shop.open) {
     game.shop.render(ctx, game.player);
   }
 
   touch.render(ctx);
   renderSAN(ctx, game.player);
+  renderHP(ctx, game.player);
+  if (!touch.isMobile) renderWeaponMode(ctx, game.player);
   if (game.scene !== 'pond') game.daynight.renderBadge(ctx);
   game.quest.renderHUDBtn(ctx, game.player);
   game.quest.renderHUD(ctx, game.player);
@@ -488,6 +512,71 @@ function renderSAN(ctx, p) {
     ctx.fillStyle = '#ffaaaa'; ctx.font = 'bold 24px sans-serif';
     ctx.fillText(`${secs} 秒後死亡`, CONFIG.W / 2, CONFIG.H / 2 + 22);
   }
+}
+
+function doPlayerAttack() {
+  const p = game.player;
+  if (p.mode !== 'sword' || !p.equippedSword) return;
+  if (p.attackCooldown > 0) return;
+  p.attackCooldown = 25;
+  p.attackAnim = 12;
+  const isBoat = game.scene === 'ocean' || game.scene === 'ocean2';
+  const px = isBoat ? p.bx : p.x;
+  const py = isBoat ? p.by : p.y;
+  const sceneObj = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond }[game.scene];
+  sceneObj?.monsterMgr?.checkAttack(px, py, 58, p.swordCfg?.power ?? 5);
+}
+
+function renderAttackAnim(ctx, p) {
+  if (p.attackAnim <= 0) return;
+  const isBoat = game.scene === 'ocean' || game.scene === 'ocean2';
+  const px = isBoat ? p.bx : p.x;
+  const py = isBoat ? p.by : p.y - p.h / 2;
+  const prog = 1 - p.attackAnim / 12;
+  const r = 16 + prog * 42;
+  const a = (1 - prog) * 0.88;
+  ctx.save();
+  ctx.strokeStyle = `rgba(255,220,60,${a.toFixed(3)})`;
+  ctx.lineWidth = 3 + (1 - prog) * 5;
+  ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 18;
+  ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+function renderHP(ctx, p) {
+  if (p.hitFlash > 0) {
+    const a = (p.hitFlash / 18) * 0.40;
+    ctx.fillStyle = `rgba(220,20,20,${a.toFixed(3)})`;
+    ctx.fillRect(0, 0, CONFIG.W, CONFIG.H);
+    p.hitFlash--;
+  }
+  if (p.hp >= p.maxHp) return;
+  const barW = 88, barH = 10, bx = 10, by = CONFIG.H - 24;
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.beginPath(); ctx.roundRect(bx - 2, by - 2, barW + 4, barH + 4, 4); ctx.fill();
+  ctx.fillStyle = '#440000'; ctx.fillRect(bx, by, barW, barH);
+  const ratio = p.hp / p.maxHp;
+  ctx.fillStyle = ratio > 0.5 ? '#44dd44' : ratio > 0.25 ? '#ddaa00' : '#ee2222';
+  ctx.fillRect(bx, by, barW * ratio, barH);
+  ctx.fillStyle = '#ddd'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(`HP ${p.hp}/${p.maxHp}`, bx, by - 3);
+}
+
+function renderWeaponMode(ctx, p) {
+  if (!p.equippedSword) return;
+  const isWeapon = p.mode === 'sword';
+  const label = isWeapon
+    ? `⚔️ ${p.swordCfg.name}  [1=釣竿]`
+    : `🎣 釣竿  [2=武器]`;
+  ctx.save();
+  ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'right';
+  const tw = ctx.measureText(label).width;
+  const bx = CONFIG.W - 8, by = CONFIG.H - 8;
+  ctx.fillStyle = 'rgba(0,0,0,0.58)';
+  ctx.beginPath(); ctx.roundRect(bx - tw - 8, by - 16, tw + 12, 20, 4); ctx.fill();
+  ctx.fillStyle = isWeapon ? '#ffaa44' : '#88ccff';
+  ctx.fillText(label, bx, by - 2);
+  ctx.restore();
 }
 
 window.addEventListener('load', init);
