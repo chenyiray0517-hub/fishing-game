@@ -20,9 +20,12 @@ const CONFIG = {
   ],
 
   UPGRADES: [
-    { id: 'line',  name: '延長釣線',  costBase: 150, maxLv: 3, desc: '每級增加拋竿距離 +20%' },
-    { id: 'hook',  name: '魚鉤強化',  costBase: 200, maxLv: 3, desc: '每級縮短等待時間 -20%' },
-    { id: 'reel',  name: '捲線器升級', costBase: 260, maxLv: 3, desc: '每級加快收竿力道 +25%' },
+    { id: 'line',    name: '延長釣線',  costBase: 150, maxLv: 3,  desc: '每級增加拋竿距離 +20%' },
+    { id: 'hook',    name: '魚鉤強化',  costBase: 200, maxLv: 3,  desc: '每級縮短等待時間 -20%' },
+    { id: 'reel',    name: '捲線器升級', costBase: 260, maxLv: 3,  desc: '每級加快收竿力道 +25%' },
+    { id: 'maxhp',   name: '體魄強化',  costBase: 300, maxLv: 10, desc: '每級提升最大生命值 +10%' },
+    { id: 'movespd', name: '身法訓練',  costBase: 350, maxLv: 10, desc: '每級提升移動速度 +10%' },
+    { id: 'atkpow',  name: '武器熟練',  costBase: 400, maxLv: 10, desc: '每級提升攻擊傷害 +10%' },
   ],
 
   FISH: [
@@ -127,12 +130,21 @@ const CONFIG = {
   ],
 
   MONSTERS: {
-    zombie:  { name:'殭屍', hp:35, speed:0.65, damage:6,  spawnInterval:480, maxCount:5, reward:15,
-               color:'#3a5a18', headColor:'#5a8a28', legColor:'#253a10', eyeColor:'#ff4400', nameColor:'#ffaa44' },
-    drowned: { name:'溺屍', hp:45, speed:0.55, damage:8,  spawnInterval:540, maxCount:5, reward:20,
-               color:'#1a4a5a', headColor:'#2a7080', legColor:'#102840', eyeColor:'#00ffdd', nameColor:'#88ddff' },
-    sprite:  { name:'精靈', hp:20, speed:1.1,  damage:12, spawnInterval:400, maxCount:5, reward:25,
-               color:'#882aaa', headColor:'#bb55dd', legColor:'#661880', eyeColor:'#ffee00', nameColor:'#ffaaff' },
+    // 河邊（最弱）
+    zombie:         { name:'殭屍', hp:70,  speed:0.65, damage:6,  spawnInterval:480, maxCount:5, reward:100,
+                      color:'#3a5a18', headColor:'#5a8a28', legColor:'#253a10', eyeColor:'#ff4400', nameColor:'#ffaa44' },
+    // 海灘（中等）
+    zombie_beach:   { name:'殭屍', hp:140, speed:0.80, damage:12, spawnInterval:480, maxCount:5, reward:200,
+                      color:'#284010', headColor:'#3a6018', legColor:'#182808', eyeColor:'#ff1100', nameColor:'#ff6622' },
+    // 秘密池塘（強，速度快）
+    sprite:         { name:'精靈', hp:100, speed:1.35, damage:22, spawnInterval:400, maxCount:5, reward:380,
+                      color:'#882aaa', headColor:'#bb55dd', legColor:'#661880', eyeColor:'#ffee00', nameColor:'#ffaaff' },
+    // 第一海（普通）
+    drowned:        { name:'溺屍', hp:90,  speed:0.55, damage:8,  spawnInterval:540, maxCount:5, reward:150,
+                      color:'#1a4a5a', headColor:'#2a7080', legColor:'#102840', eyeColor:'#00ffdd', nameColor:'#88ddff' },
+    // 第二海（最強）
+    drowned_ocean2: { name:'溺屍', hp:240, speed:0.85, damage:28, spawnInterval:540, maxCount:5, reward:550,
+                      color:'#0a2030', headColor:'#185060', legColor:'#061018', eyeColor:'#00ffff', nameColor:'#44ccff' },
   },
 
   START_MONEY: 150,

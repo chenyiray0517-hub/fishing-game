@@ -65,7 +65,7 @@ class PondScene {
     if (keys['ArrowDown']  || keys['s'] || keys['S']) dy =  1;
     if (dx && dy) { dx *= 0.707; dy *= 0.707; }
 
-    const spd = CONFIG.PLAYER_SPEED * 0.9;
+    const spd = player.getSpeed() * 0.9;
     const nx = player.x + dx * spd, ny = player.y + dy * spd;
     if (this.canWalk(nx, player.y, player.w, player.h)) player.x = nx;
     if (this.canWalk(player.x, ny, player.w, player.h)) player.y = ny;

@@ -1,6 +1,6 @@
 const game = {
   canvas: null, ctx: null,
-  player: null, shop: null, backpack: null, gamemap: null, dialogue: null, encyclopedia: null, quest: null,
+  player: null, shop: null, trader: null, backpack: null, gamemap: null, dialogue: null, encyclopedia: null, quest: null,
   harbor: null, ocean: null, ocean2: null, lake: null, beach: null, pond: null,
   daynight: null,
   scene: 'harbor',   // 'harbor' | 'ocean' | 'ocean2' | 'lake' | 'beach' | 'pond'
@@ -21,6 +21,7 @@ function init() {
   game.daynight = new DayNight();
   game.player   = new Player();
   game.shop     = new ShopUI();
+  game.trader   = new TraderUI();
   game.backpack = new Backpack();
   game.gamemap  = new GameMap();
   game.harbor   = new HarborScene();
@@ -77,7 +78,7 @@ function init() {
     }
     // Left click attack (PC only, sword mode)
     if (e.button === 0 && !touch.isMobile && game.player.mode === 'sword' &&
-        !game.shop.open && !game.backpack.open && !game.gamemap.open && !game.dialogue.active) {
+        !game.shop.open && !game.trader.open && !game.backpack.open && !game.gamemap.open && !game.dialogue.active) {
       doPlayerAttack();
     }
   });
@@ -135,6 +136,12 @@ function handlePress(key) {
   // Shop overlay consumes all input
   if (game.shop.open) {
     game.shop.handleKey(key, game.player);
+    return;
+  }
+
+  // Trader overlay consumes all input
+  if (game.trader.open) {
+    game.trader.handleKey(key, game.player);
     return;
   }
 
@@ -205,6 +212,7 @@ function handlePress(key) {
     } else if (game.scene === 'lake') {
       const qId = game.lake.nearbyQuestNPC(game.player);
       if (qId) { game.quest.openFor(qId, game.player); return; }
+      if (game.lake.nearbyTraderNPC(game.player)) { game.trader.show(); return; }
       const lakeExit = game.lake.nearbyExit(game.player);
       if (lakeExit === 'harbor') {
         game.scene = 'harbor'; game.player.x = 752; game.player.y = 325;
@@ -373,6 +381,12 @@ function update() {
     return;
   }
 
+  game.trader.update();
+  if (game.trader.open) {
+    if (touch.shopTap) game.trader.handleTouch(touch.shopTap, game.player);
+    return;
+  }
+
   if (game.scene === 'harbor') {
     game.harbor.update(game.keys, game.player);
   } else if (game.scene === 'ocean') {
@@ -462,6 +476,9 @@ function render() {
 
   if (game.shop.open) {
     game.shop.render(ctx, game.player);
+  }
+  if (game.trader.open) {
+    game.trader.render(ctx, game.player);
   }
 
   touch.render(ctx);
@@ -567,7 +584,7 @@ function doPlayerAttack() {
   const px = isBoat ? p.bx : p.x;
   const py = isBoat ? p.by : p.y;
   const sceneObj = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond }[game.scene];
-  sceneObj?.monsterMgr?.checkAttack(px, py, 58, p.swordCfg?.power ?? 5);
+  sceneObj?.monsterMgr?.checkAttack(px, py, 58, (p.swordCfg?.power ?? 5) * p.getAtkMult());
 }
 
 function renderWaveMsg(ctx) {

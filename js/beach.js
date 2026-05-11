@@ -3,7 +3,7 @@ class BeachScene {
     this.fishing  = new FishingGame();
     this.waveOff  = 0;
     this.WATER_Y  = 285;
-    this.monsterMgr = new MonsterManager('zombie');
+    this.monsterMgr = new MonsterManager('zombie_beach');
 
     this.QUEST_NPC = { id: 'beach', x: 540, y: 250 };
 
@@ -70,7 +70,7 @@ class BeachScene {
     if (keys['ArrowDown']  || keys['s'] || keys['S']) dy =  1;
     if (dx && dy) { dx *= 0.707; dy *= 0.707; }
 
-    const spd = CONFIG.PLAYER_SPEED;
+    const spd = player.getSpeed();
     const nx = player.x + dx * spd, ny = player.y + dy * spd;
     if (this.canWalk(nx, player.y, player.w, player.h)) player.x = nx;
     if (this.canWalk(player.x, ny, player.w, player.h)) player.y = ny;

@@ -8,7 +8,8 @@ class LakeScene {
     // NPC (energy drink vendor)
     this.NPC = { x: 722, y: 215 };
 
-    this.QUEST_NPC = { id: 'lake', x: 168, y: 462 };
+    this.QUEST_NPC  = { id: 'lake', x: 168, y: 462 };
+    this.TRADER_NPC = { x: 750, y: 430 };
 
     this.DIALOGUE_NPCS = [
       { x: 155, y: 300, name: '賞鳥者', color: '#aaffaa',
@@ -38,6 +39,11 @@ class LakeScene {
   nearbyQuestNPC(player) {
     const q = this.QUEST_NPC;
     return Math.hypot(player.x - q.x, player.y - q.y) < 62 ? q.id : null;
+  }
+
+  nearbyTraderNPC(player) {
+    const t = this.TRADER_NPC;
+    return Math.hypot(player.x - t.x, player.y - t.y) < 65;
   }
 
   nearbyDialogueNPC(player) {
@@ -90,7 +96,7 @@ class LakeScene {
     if (keys['ArrowDown']  || keys['s'] || keys['S']) dy =  1;
     if (dx && dy) { dx *= 0.707; dy *= 0.707; }
 
-    const spd = CONFIG.PLAYER_SPEED;
+    const spd = player.getSpeed();
     const nx = player.x + dx * spd, ny = player.y + dy * spd;
     if (this.canWalk(nx, player.y, player.w, player.h)) player.x = nx;
     if (this.canWalk(player.x, ny, player.w, player.h)) player.y = ny;
@@ -178,6 +184,7 @@ class LakeScene {
     this._drawNPC(ctx);
     this._renderDialogueNPCs(ctx);
     this._renderQuestNPC(ctx, player);
+    this._renderTraderNPC(ctx);
 
     // Nearby prompts
     touch.clearInteractRect();
@@ -196,6 +203,18 @@ class LakeScene {
         ctx.fillStyle = 'rgba(0,0,0,0.82)';
         ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.fill();
         ctx.fillStyle = marker === '✓' ? '#44ff88' : '#ffdd44'; ctx.textAlign = 'center';
+        ctx.fillText(label, player.x, player.y - 44);
+        touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
+      } else if (this.nearbyTraderNPC(player)) {
+        const label = touch.isMobile ? '👆 神秘商人' : '[E] 神秘商人';
+        ctx.font = 'bold 13px sans-serif';
+        const tw = ctx.measureText(label).width + 24;
+        const lbx = player.x - tw / 2, lby = player.y - 64;
+        ctx.fillStyle = 'rgba(30,5,50,0.88)';
+        ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.fill();
+        ctx.strokeStyle = '#8833cc'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(lbx, lby, tw, 28, 7); ctx.stroke();
+        ctx.fillStyle = '#cc88ff'; ctx.textAlign = 'center';
         ctx.fillText(label, player.x, player.y - 44);
         touch.setInteractRect(lbx - 10, lby - 10, tw + 20, 48);
       } else if (exit) {
@@ -457,6 +476,63 @@ class LakeScene {
     } else {
       sprites.rod(ctx, p.equippedRod, x - w / 2, y - h + 18, x - w / 2 - 28, y - h - 10);
     }
+  }
+
+  _renderTraderNPC(ctx) {
+    const nx = this.TRADER_NPC.x, ny = this.TRADER_NPC.y;
+    const w = 22, h = 32;
+
+    // Aura glow
+    const aura = ctx.createRadialGradient(nx, ny - h + 7, 3, nx, ny - h + 7, 22);
+    aura.addColorStop(0, 'rgba(180,60,255,0.35)');
+    aura.addColorStop(1, 'rgba(180,60,255,0)');
+    ctx.fillStyle = aura;
+    ctx.fillRect(nx - 26, ny - h - 16, 52, 50);
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(nx, ny + 2, w / 2, 5, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Robe body (dark purple)
+    ctx.fillStyle = '#2a0642'; ctx.fillRect(nx - w / 2, ny - h + 10, w, h - 10);
+    ctx.fillStyle = '#7722bb'; ctx.fillRect(nx - w / 2, ny - h + 10, 3, h - 10);
+    ctx.fillRect(nx + w / 2 - 3, ny - h + 10, 3, h - 10);
+
+    // Arms holding a scale
+    ctx.fillStyle = '#2a0642';
+    ctx.fillRect(nx - 18, ny - h + 17, 9, 5);
+    ctx.fillRect(nx + 9,  ny - h + 17, 9, 5);
+    // Scale prop
+    ctx.strokeStyle = '#cc88ff'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(nx + 17, ny - h + 19); ctx.lineTo(nx + 17, ny - h + 11); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(nx + 13, ny - h + 12); ctx.lineTo(nx + 21, ny - h + 12); ctx.stroke();
+    ctx.beginPath(); ctx.arc(nx + 13, ny - h + 15, 3, 0, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(nx + 21, ny - h + 15, 3, 0, Math.PI); ctx.stroke();
+
+    // Hood (dark circle with glow edge)
+    ctx.fillStyle = '#1a0330'; ctx.beginPath(); ctx.arc(nx, ny - h + 7, w / 2 + 2, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowColor = '#9933cc'; ctx.shadowBlur = 6;
+    ctx.strokeStyle = '#7722aa'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(nx, ny - h + 7, w / 2 + 2, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Glowing eyes
+    const glow = 1.6 + Math.sin(Date.now() / 320) * 0.55;
+    ctx.fillStyle = '#ee44ff';
+    ctx.shadowColor = '#cc00ff'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(nx - 3.5, ny - h + 7, glow, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(nx + 3.5, ny - h + 7, glow, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Speech bubble
+    const bw = 106, bh = 24, bx = nx - bw - 8, by = ny - h - 38;
+    ctx.fillStyle = 'rgba(30,5,55,0.92)';
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.fill();
+    ctx.strokeStyle = '#7722cc'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(nx - 14, by + bh); ctx.lineTo(nx - 8, by + bh + 7); ctx.lineTo(nx - 2, by + bh); ctx.closePath();
+    ctx.fillStyle = 'rgba(30,5,55,0.92)'; ctx.fill(); ctx.strokeStyle = '#7722cc'; ctx.stroke();
+    ctx.fillStyle = '#cc88ff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('以物換幣...', bx + bw / 2, by + bh / 2 + 4);
   }
 
   _renderHUD(ctx, player) {

@@ -3,7 +3,7 @@ class Ocean2Scene {
     this.fishing  = new FishingGame();
     this.waveOff  = 0;
     this.bobT     = 0;
-    this.monsterMgr = new MonsterManager('drowned');
+    this.monsterMgr = new MonsterManager('drowned_ocean2');
     // 生物發光粒子
     this.glows = Array.from({ length: 40 }, () => ({
       x: Math.random() * CONFIG.W,

@@ -13,7 +13,7 @@ class Player {
     this.equippedRod = 'wood';
     this.bait = { worm: CONFIG.START_BAIT_COUNT, shrimp: 0, lure: 0 };
     this.equippedBait = 'worm';
-    this.upgrades = { line: 0, hook: 0, reel: 0 };
+    this.upgrades = { line: 0, hook: 0, reel: 0, maxhp: 0, movespd: 0, atkpow: 0 };
     this.fish = [];
     this._savedAt = 0;
 
@@ -36,6 +36,10 @@ class Player {
     this.ownedSwords  = [];
     this.equippedSword = null;
 
+    // Special trader — saved
+    this.specialCoins    = 0;
+    this.craftMaterials  = { netherstone: 0, myth_gem: 0 };
+
     // Lucky charm active — ephemeral
     this.luckyCharmActive = false;
 
@@ -47,7 +51,7 @@ class Player {
     this.lyingTimer = 0;  // frames since last -1 san
 
     // Combat — ephemeral (not saved)
-    this.hp = 100; this.maxHp = 100;
+    this.hp = 100;
     this.hitFlash = 0;
     this.attackCooldown = 0;
     this.attackAnim = 0;
@@ -55,6 +59,10 @@ class Player {
 
     this.load();
   }
+
+  get maxHp()      { return Math.floor(100 * (1 + (this.upgrades.maxhp || 0) * 0.1)); }
+  getSpeed()       { return CONFIG.PLAYER_SPEED * (1 + (this.upgrades.movespd || 0) * 0.1); }
+  getAtkMult()     { return 1 + (this.upgrades.atkpow || 0) * 0.1; }
 
   get rod()        { return CONFIG.RODS.find(r => r.id === this.equippedRod); }
   get baitCfg()    { return CONFIG.BAITS.find(b => b.id === this.equippedBait); }
@@ -114,7 +122,7 @@ class Player {
     this.san = Math.min(100, this.san + 8); // 被攻擊增加 SAN
     this.hitFlash = 18;
     if (this.hp <= 0) {
-      this.hp = 100;
+      this.hp = this.maxHp;
       this.money = Math.floor(this.money * 0.8);
       this.fish = [];
       this.save();
@@ -169,6 +177,8 @@ class Player {
         activeQuests:   this.activeQuests,
         ownedSwords:    this.ownedSwords,
         equippedSword:  this.equippedSword,
+        specialCoins:   this.specialCoins,
+        craftMaterials: this.craftMaterials,
         san:            this.san,
         sanTimer:       this.sanTimer,
         deathTimer:     this.deathTimer,
@@ -197,6 +207,8 @@ class Player {
       this.caughtIds      = d.caughtIds      ?? this.caughtIds;
       this.ownedSwords    = d.ownedSwords    ?? this.ownedSwords;
       this.equippedSword  = d.equippedSword  ?? this.equippedSword;
+      this.specialCoins   = d.specialCoins   ?? 0;
+      this.craftMaterials = d.craftMaterials ?? { netherstone: 0, myth_gem: 0 };
       this.san            = d.san            ?? 0;
       this.sanTimer       = d.sanTimer       ?? 0;
       this.deathTimer     = d.deathTimer     ?? -1;
