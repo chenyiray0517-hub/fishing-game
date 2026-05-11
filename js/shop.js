@@ -78,17 +78,18 @@ class ShopUI {
           };
         });
 
-      case 'market':
+      case 'market': {
         if (player.fish.length === 0) return [{ label: '目前沒有魚可賣', sub: '', hint: '', data: null }];
         const grouped = {};
         player.fish.forEach(f => { grouped[f.id] = (grouped[f.id]||0)+1; });
         const list = Object.entries(grouped).map(([id,cnt]) => {
           const f = CONFIG.FISH.find(f=>f.id===id);
-          return { label: `${f.name} ×${cnt}`, sub: `$${f.value*cnt}`, hint: '', data: 'sell', fish: f };
+          return { label: `${f.name} ×${cnt}`, sub: `$${f.value*cnt}`, hint: `單價 $${f.value}／條`, data: 'sell', fish: f };
         });
         const total = player.fish.reduce((s,f)=>s+f.value,0);
         list.push({ label: '全部賣出', sub: `共 $${total}`, hint: '', data: 'sell_all' });
         return list;
+      }
 
       case 'energy': {
         const full = player.energyDrinks >= 3;
@@ -185,6 +186,17 @@ class ShopUI {
         const { earned, count } = player.sellAll();
         this.notify(count > 0 ? `賣出 ${count} 條魚，獲得 $${earned}！` : '沒有魚', count>0);
         this.sel = 0; this.scrollTop = 0;
+      } else if (item.data === 'sell' && item.fish) {
+        const id = item.fish.id;
+        const count  = player.fish.filter(f => f.id === id).length;
+        const earned = count * item.fish.value;
+        player.fish  = player.fish.filter(f => f.id !== id);
+        player.money += earned;
+        player.save();
+        this.notify(`賣出 ${item.fish.name} ×${count}，獲得 $${earned}！`);
+        const remaining = this.items(player);
+        if (this.sel >= remaining.length) this.sel = Math.max(0, remaining.length - 1);
+        this.scrollTop = Math.min(this.scrollTop, Math.max(0, remaining.length - this._visCount()));
       }
     }
   }
