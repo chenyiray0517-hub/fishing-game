@@ -308,6 +308,7 @@ class HarborScene {
     this._renderMapProp(ctx);
     this._renderLakePath(ctx);
     this.renderPlayer(ctx, player);
+    game.daynight.applyOverlay(ctx);
     this.renderHUD(ctx, player);
   }
 

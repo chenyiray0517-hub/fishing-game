@@ -132,6 +132,7 @@ class Ocean2Scene {
     }
 
     this._renderBoat(ctx, player);
+    game.daynight.applyOverlay(ctx);
     this.fishing.render(ctx);
     this._renderHUD(ctx, player);
   }

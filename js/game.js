@@ -2,6 +2,7 @@ const game = {
   canvas: null, ctx: null,
   player: null, shop: null, backpack: null, gamemap: null, dialogue: null, encyclopedia: null, quest: null,
   harbor: null, ocean: null, ocean2: null, lake: null, beach: null, pond: null,
+  daynight: null,
   scene: 'harbor',   // 'harbor' | 'ocean' | 'ocean2' | 'lake' | 'beach' | 'pond'
   keys: {},
   spacePressedThisFrame: false,
@@ -15,6 +16,7 @@ function init() {
   game.canvas.height = CONFIG.H;
   game.ctx = game.canvas.getContext('2d');
 
+  game.daynight = new DayNight();
   game.player   = new Player();
   game.shop     = new ShopUI();
   game.backpack = new Backpack();
@@ -410,6 +412,7 @@ function render() {
 
   touch.render(ctx);
   renderSAN(ctx, game.player);
+  if (game.scene !== 'pond') game.daynight.renderBadge(ctx);
   game.quest.renderHUDBtn(ctx, game.player);
   game.quest.renderHUD(ctx, game.player);
   game.backpack.render(ctx, game.player);
