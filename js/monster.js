@@ -28,7 +28,7 @@ class Monster {
       this.y += (dy / dist) * this.speed;
       this.walkT++;
     } else if (this.attackCooldown <= 0) {
-      game.player.takeDamage(this.damage);
+      if (game.player.san < 100) game.player.takeDamage(this.damage);
       this.attackCooldown = 90;
     }
   }
@@ -120,17 +120,11 @@ class Monster {
 }
 
 class MonsterManager {
-  constructor(monsterType, alwaysNight = false) {
+  constructor(monsterType) {
     this.monsterType = monsterType;
-    this.alwaysNight = alwaysNight;
     this.monsters = [];
-    this.spawnTimer = 0;
     this.killNotify = null;
     this.killNotifyT = 0;
-  }
-
-  _isNight() {
-    return this.alwaysNight || game.daynight.nightAlpha > 0.3;
   }
 
   _spawnPos() {
@@ -143,22 +137,16 @@ class MonsterManager {
     }
   }
 
-  update(px, py) {
-    const cfg = CONFIG.MONSTERS[this.monsterType];
+  // Called by global wave system in game.js
+  spawnWave(count) {
     const alive = this.monsters.filter(m => !m.dead).length;
-
-    if (this._isNight()) {
-      this.spawnTimer++;
-      if (this.spawnTimer >= cfg.spawnInterval && alive < cfg.maxCount) {
-        this.spawnTimer = 0;
-        const pos = this._spawnPos();
-        this.monsters.push(new Monster(this.monsterType, pos.x, pos.y));
-      }
-    } else {
-      this.spawnTimer = 0;
-      for (const m of this.monsters) if (!m.dead) m.dead = true;
+    const n = Math.min(count, Math.max(0, 15 - alive));
+    for (let i = 0; i < n; i++) {
+      this.monsters.push(new Monster(this.monsterType, ...Object.values(this._spawnPos())));
     }
+  }
 
+  update(px, py) {
     for (const m of this.monsters) m.update(px, py);
     this.monsters = this.monsters.filter(m => m.deathAlpha > 0);
     if (this.killNotifyT > 0) this.killNotifyT--;

@@ -8,6 +8,8 @@ const game = {
   spacePressedThisFrame: false,
   mouse: { x: 400, y: 300 },
   drinkNotify: { text: '', t: 0 },
+  waveTimer: 0,   // frames; resets every wave
+  waveMsg:   { text: '', t: 0 },
 };
 
 function init() {
@@ -269,6 +271,18 @@ function update() {
   if (game.player.attackCooldown > 0) game.player.attackCooldown--;
   if (game.player.attackAnim > 0) game.player.attackAnim--;
 
+  // Global wave timer: pauses in harbor, runs at night (or always in pond)
+  const _isNightScene = game.scene !== 'harbor' &&
+    (game.daynight.nightAlpha > 0.3 || game.scene === 'pond');
+  if (_isNightScene) {
+    game.waveTimer++;
+    if (game.waveTimer >= 3600) { // 60 s × 60 fps
+      game.waveTimer = 0;
+      triggerWave();
+    }
+  }
+  if (game.waveMsg.t > 0) game.waveMsg.t--;
+
   // Touch action button → space press (cast / bite)
   if (touch.drinkTapped) drinkEnergy();
 
@@ -427,6 +441,7 @@ function render() {
   }
 
   renderAttackAnim(ctx, game.player);
+  renderWaveMsg(ctx);
 
   if (game.shop.open) {
     game.shop.render(ctx, game.player);
@@ -514,6 +529,17 @@ function renderSAN(ctx, p) {
   }
 }
 
+function triggerWave() {
+  const sceneObj = {
+    ocean: game.ocean, ocean2: game.ocean2,
+    lake: game.lake, beach: game.beach, pond: game.pond,
+  }[game.scene];
+  if (!sceneObj?.monsterMgr) return;
+  const count = 3 + Math.floor(Math.random() * 3); // 3–5
+  sceneObj.monsterMgr.spawnWave(count);
+  game.waveMsg = { text: `⚠ 一波怪物來襲！(${count} 隻)`, t: 220 };
+}
+
 function doPlayerAttack() {
   const p = game.player;
   if (p.mode !== 'sword' || !p.equippedSword) return;
@@ -525,6 +551,19 @@ function doPlayerAttack() {
   const py = isBoat ? p.by : p.y;
   const sceneObj = { ocean: game.ocean, ocean2: game.ocean2, lake: game.lake, beach: game.beach, pond: game.pond }[game.scene];
   sceneObj?.monsterMgr?.checkAttack(px, py, 58, p.swordCfg?.power ?? 5);
+}
+
+function renderWaveMsg(ctx) {
+  if (game.waveMsg.t <= 0) return;
+  const a = Math.min(1, game.waveMsg.t / 40);
+  ctx.save();
+  ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+  const tw = ctx.measureText(game.waveMsg.text).width;
+  ctx.fillStyle = `rgba(0,0,0,${(a * 0.62).toFixed(3)})`;
+  ctx.beginPath(); ctx.roundRect(CONFIG.W / 2 - tw / 2 - 10, 90, tw + 20, 28, 6); ctx.fill();
+  ctx.fillStyle = `rgba(255,100,80,${a.toFixed(3)})`;
+  ctx.fillText(game.waveMsg.text, CONFIG.W / 2, 110);
+  ctx.restore();
 }
 
 function renderAttackAnim(ctx, p) {

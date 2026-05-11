@@ -3,7 +3,7 @@ class PondScene {
     this.fishing  = new FishingGame();
     this.waveOff  = 0;
     this.mistOff  = 0;
-    this.monsterMgr = new MonsterManager('sprite', true);
+    this.monsterMgr = new MonsterManager('sprite');
     // 水潭橢圓
     this.POND = { cx: 400, cy: 310, rx: 195, ry: 140 };
     this.QUEST_NPC = { id: 'pond', x: 680, y: 490 };

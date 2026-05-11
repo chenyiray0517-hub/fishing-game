@@ -109,7 +109,9 @@ class Player {
   }
 
   takeDamage(dmg) {
+    if (this.san >= 100) return; // SAN 滿時免疫傷害
     this.hp = Math.max(0, this.hp - dmg);
+    this.san = Math.min(100, this.san + 8); // 被攻擊增加 SAN
     this.hitFlash = 18;
     if (this.hp <= 0) {
       this.hp = 100;
