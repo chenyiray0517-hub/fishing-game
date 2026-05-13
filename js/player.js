@@ -121,7 +121,7 @@ class Player {
     if (this.san >= 100) return; // SAN 滿時免疫傷害
     this.lastDmgTimer = 0; // 重設回血計時
     this.hp = Math.max(0, this.hp - dmg);
-    this.san = Math.min(100, this.san + 8);
+    this.san = Math.max(0, this.san - 10);
     this.hitFlash = 18;
   }
 
