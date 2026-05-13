@@ -26,6 +26,7 @@ class FishingGame {
   }
 
   start(spot, player) {
+    if (player.mode !== 'rod') return false;
     if (!player.useBait()) return false;
     this.spot    = spot;
     this.state   = 'cast';
