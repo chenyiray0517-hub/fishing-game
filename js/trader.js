@@ -31,8 +31,8 @@ class TraderUI {
 
   _craftList() {
     return [
-      { swordId: 'nether', name: '獄髓劍', mat: 'netherstone', matName: '獄髓',    matQty: 10, power: 320 },
-      { swordId: 'myth',   name: '神話劍', mat: 'myth_gem',    matName: '神話寶石', matQty: 10, power: 500 },
+      { swordId: 'nether', name: '獄髓劍', mat: 'netherstone', matName: '獄髓',    matQty: 10, power: 320, goldCost: 30000 },
+      { swordId: 'myth',   name: '神話劍', mat: 'myth_gem',    matName: '神話寶石', matQty: 10, power: 500, goldCost: 50000 },
     ];
   }
 
@@ -105,7 +105,9 @@ class TraderUI {
       if (player.ownedSwords.includes(item.swordId)) { this.notify('已擁有此武器！', false); return; }
       const have = player.craftMaterials[item.mat] || 0;
       if (have < item.matQty) { this.notify(`${item.matName} 不足！(${have}/${item.matQty})`, false); return; }
+      if (player.money < item.goldCost) { this.notify(`金幣不足！需要 $${item.goldCost}`, false); return; }
       player.craftMaterials[item.mat] -= item.matQty;
+      player.money -= item.goldCost;
       player.ownedSwords.push(item.swordId);
       player.equippedSword = item.swordId;
       player.save();
@@ -267,22 +269,25 @@ class TraderUI {
         }
 
       } else {
-        const { swordId, name, mat, matName, matQty, power } = item;
+        const { swordId, name, mat, matName, matQty, power, goldCost } = item;
         const have = player.craftMaterials?.[mat] || 0;
         const owned = player.ownedSwords.includes(swordId);
-        const canCraft = !owned && have >= matQty;
+        const hasMat = have >= matQty;
+        const hasGold = player.money >= goldCost;
+        const canCraft = !owned && hasMat && hasGold;
         ctx.textAlign = 'left';
         ctx.font = 'bold 14px sans-serif';
         ctx.fillStyle = owned ? '#88ff88' : canCraft ? '#ffd700' : '#aa8888';
         ctx.fillText(`⚔️ ${name}`, x + 16, iy + 22);
         ctx.font = '12px sans-serif'; ctx.fillStyle = '#8899aa';
         ctx.fillText(
-          owned ? '已擁有此武器' : `需 ${matName} ×${matQty}（擁有 ${have}）  攻擊力 ${power}`,
+          owned ? '已擁有此武器' : `需 ${matName} ×${matQty}（擁有 ${have}）  $${goldCost}  攻擊力 ${power}`,
           x + 16, iy + 40
         );
         ctx.textAlign = 'right'; ctx.font = 'bold 13px sans-serif';
+        const statusText = owned ? '已擁有' : canCraft ? '可鍛造 [Enter]' : !hasMat ? '材料不足' : '金幣不足';
         ctx.fillStyle = owned ? '#44ff88' : canCraft ? '#ffdd55' : '#ff5544';
-        ctx.fillText(owned ? '已擁有' : canCraft ? '可鍛造 [Enter]' : '材料不足', x + W - 18, iy + 24);
+        ctx.fillText(statusText, x + W - 18, iy + 24);
       }
     }
 
