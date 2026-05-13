@@ -449,6 +449,14 @@ function updateSAN() {
     if (p.sanTimer >= 180) { p.sanTimer = 0; p.san = Math.min(100, p.san + 1); }
   }
 
+  // Passive HP regen: +1 every 5 seconds (300 frames)
+  if (p.hp < p.maxHp) {
+    p.hpRegenTimer = (p.hpRegenTimer || 0) + 1;
+    if (p.hpRegenTimer >= 300) { p.hpRegenTimer = 0; p.hp = Math.min(p.maxHp, p.hp + 1); }
+  } else {
+    p.hpRegenTimer = 0;
+  }
+
   // Trigger death countdown
   if (p.san >= 100 && p.deathTimer < 0) p.deathTimer = 5 * 60;
 }
