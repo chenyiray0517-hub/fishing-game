@@ -41,6 +41,12 @@ class QuestUI {
     this.close();
   }
 
+  _cancel(npcId, player) {
+    player.activeQuests[npcId] = null;
+    player.save();
+    this.close();
+  }
+
   _claim(npcId, player) {
     const q = player.activeQuests[npcId];
     if (!q || !q.accepted) return;
@@ -114,6 +120,11 @@ class QuestUI {
       if (p.x > PX + PW/2 - 110 && p.x < PX + PW/2 + 110 &&
           p.y > PY + PH - 106 && p.y < PY + PH - 50)
         this._claim(this.npcId, player);
+    } else {
+      // 放棄委託按鈕
+      if (p.x > PX + PW/2 - 75 && p.x < PX + PW/2 + 75 &&
+          p.y > PY + PH - 106 && p.y < PY + PH - 62)
+        this._cancel(this.npcId, player);
     }
   }
 
@@ -181,7 +192,15 @@ class QuestUI {
           ctx.fillText('完成任務！領取報酬', PX + PW/2, btnY + 34);
         } else {
           ctx.fillStyle = '#445566'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
-          ctx.fillText('繼續釣魚後回來交付', PX + PW/2, PY + PH - 68);
+          ctx.fillText('繼續釣魚後回來交付', PX + PW/2, PY + PH - 122);
+          // 放棄委託按鈕
+          const canX = PX + PW/2 - 75, canY = PY + PH - 106, canW = 150, canH = 44;
+          ctx.fillStyle = 'rgba(80,20,20,0.85)';
+          ctx.beginPath(); ctx.roundRect(canX, canY, canW, canH, 10); ctx.fill();
+          ctx.strokeStyle = '#aa4444'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(canX, canY, canW, canH, 10); ctx.stroke();
+          ctx.fillStyle = '#ffaaaa'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('放棄委託', canX + canW/2, canY + 28);
         }
         // Close hint
         const closeHint = touch.isMobile ? '右上角 ✕ 關閉' : '[ESC] 關閉';
