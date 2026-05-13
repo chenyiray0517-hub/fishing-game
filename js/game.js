@@ -478,6 +478,9 @@ function updateSAN() {
   } else {
     p.hpRegenTimer = 0;
   }
+
+  // SAN=100 → 3-second death countdown
+  if (p.san >= 100 && p.deathTimer < 0) p.deathTimer = 180;
 }
 
 function render() {
