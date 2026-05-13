@@ -499,8 +499,9 @@ function renderSAN(ctx, p) {
   if (p.san <= 0 && p.deathTimer < 0) return;
 
   // Player canvas position
-  const px = (game.scene === 'ocean') ? p.bx : p.x;
-  const py = (game.scene === 'ocean') ? p.by - 68 : p.y - p.h - 12;
+  const onBoat = game.scene === 'ocean' || game.scene === 'ocean2';
+  const px = onBoat ? p.bx : p.x;
+  const py = onBoat ? p.by - 68 : p.y - p.h - 12;
 
   // SAN bar above player head
   const barW = 44, barH = 5, bx = px - barW / 2;
