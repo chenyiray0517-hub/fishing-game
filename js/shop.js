@@ -278,14 +278,11 @@ class ShopUI {
 
       const locked = !!item.locked;
 
-      // Sword colour swatch on the left edge
+      // Sword sprite icon on the left edge
       if (item.swatchColor) {
-        ctx.fillStyle = item.swatchColor;
-        ctx.fillRect(x + 8, iy + 10, 6, 38);
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-        ctx.fillRect(x + 8, iy + 10, 6, 19);
+        sprites.sword_icon(ctx, item.data.id, x + 14, iy + 31);
       }
-      const textX = item.swatchColor ? x + 22 : x + 22;
+      const textX = item.swatchColor ? x + 28 : x + 22;
 
       ctx.textAlign = 'left';
       ctx.font = 'bold 15px sans-serif';

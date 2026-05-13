@@ -580,8 +580,11 @@ class HarborScene {
     } else {
       ctx.fillRect(x-4,y-h+7,3,3);
     }
-    // Rod sprite in player's hand
-    if (dir==='right'||dir==='down') {
+    // Rod or sword in player's hand
+    if (p.mode === 'sword' && p.equippedSword) {
+      const facing = (dir === 'right' || dir === 'down') ? 1 : -1;
+      sprites.sword(ctx, p.equippedSword, x + facing * (w / 2 + 2), y - h + 18, facing);
+    } else if (dir==='right'||dir==='down') {
       sprites.rod(ctx, p.equippedRod, x+w/2, y-h+18, x+w/2+28, y-h-10);
     } else {
       sprites.rod(ctx, p.equippedRod, x-w/2, y-h+18, x-w/2-28, y-h-10);

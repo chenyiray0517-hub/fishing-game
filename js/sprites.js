@@ -906,6 +906,100 @@ const sprites = {
     },
   },
 
+  // ── Sword sprites ───────────────────────────────────────────────────
+  // sword     : player hand — grip at (hx,hy), blade upper-right when facing=1
+  // sword_icon: shop icon — drawn diagonally, centered at (cx,cy)
+
+  sword(ctx, id, hx, hy, facing = 1) {
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.scale(facing, 1);
+    ctx.rotate(Math.PI / 4);
+    (sprites._sword[id] || sprites._sword.wood)(ctx, 1);
+    ctx.restore();
+  },
+
+  sword_icon(ctx, id, cx, cy) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI / 4);
+    (sprites._sword[id] || sprites._sword.wood)(ctx, 0.40);
+    ctx.restore();
+  },
+
+  _sword: {
+    _base(ctx, s, blade, light, dark, guard, grip) {
+      // Blade body (0,0 = grip center, blade points up = -y)
+      ctx.fillStyle = blade;
+      ctx.fillRect(-2 * s, -29 * s, 5 * s, 22 * s);
+      ctx.fillStyle = light;
+      ctx.fillRect(-2 * s, -29 * s, 2 * s, 20 * s);
+      ctx.fillStyle = dark;
+      ctx.fillRect(2 * s, -27 * s, s, 18 * s);
+      // Tip
+      ctx.fillStyle = light;
+      ctx.fillRect(-s, -33 * s, 3 * s, 4 * s);
+      ctx.fillRect(0, -35 * s, s, 2 * s);
+      // Guard
+      ctx.fillStyle = guard;
+      ctx.fillRect(-8 * s, -7 * s, 16 * s, 5 * s);
+      ctx.fillStyle = dark;
+      ctx.fillRect(-8 * s, -3 * s, 16 * s, s);
+      // Handle
+      ctx.fillStyle = grip;
+      ctx.fillRect(-s, -2 * s, 4 * s, 10 * s);
+      ctx.fillStyle = dark;
+      ctx.fillRect(2 * s, 0, s, 8 * s);
+      // Pommel
+      ctx.fillStyle = guard;
+      ctx.fillRect(-2 * s, 8 * s, 7 * s, 4 * s);
+      ctx.fillStyle = light;
+      ctx.fillRect(-2 * s, 8 * s, 7 * s, s);
+    },
+    wood(ctx, s = 1)    { sprites._sword._base(ctx, s, '#7a5520', '#a07830', '#4a2e0c', '#8a6020', '#5a3010'); },
+    stone(ctx, s = 1)   { sprites._sword._base(ctx, s, '#888898', '#b0b0c0', '#606070', '#9090a0', '#505060'); },
+    copper(ctx, s = 1)  { sprites._sword._base(ctx, s, '#b06030', '#d08040', '#803820', '#c07030', '#6a3018'); },
+    iron(ctx, s = 1)    { sprites._sword._base(ctx, s, '#a0a8b0', '#ccd4dc', '#707880', '#a8b0b8', '#505860'); },
+    steel(ctx, s = 1)   { sprites._sword._base(ctx, s, '#c8d0d8', '#e8f0f8', '#909898', '#b0b8c0', '#505058'); },
+    gold(ctx, s = 1)    { sprites._sword._base(ctx, s, '#e8b800', '#ffd700', '#a07800', '#d4a000', '#7a5800'); },
+    diamond(ctx, s = 1) { sprites._sword._base(ctx, s, '#60d8e8', '#aaf0ff', '#2090a8', '#78e0f0', '#204050'); },
+    nether(ctx, s = 1)  { sprites._sword._base(ctx, s, '#3c1a08', '#5e2e10', '#1a0804', '#4a2010', '#240e04'); },
+    myth(ctx, s = 1) {
+      const hue = (Date.now() / 25) % 360;
+      const h2  = (hue + 120) % 360;
+      const h3  = (hue + 240) % 360;
+      const g = ctx.createLinearGradient(0, -35 * s, 0, -7 * s);
+      g.addColorStop(0,   `hsl(${hue},100%,60%)`);
+      g.addColorStop(0.5, `hsl(${h2},100%,60%)`);
+      g.addColorStop(1,   `hsl(${h3},100%,60%)`);
+      ctx.shadowColor = `hsl(${hue},100%,70%)`; ctx.shadowBlur = 8;
+      ctx.fillStyle = g;
+      ctx.fillRect(-2 * s, -29 * s, 5 * s, 22 * s);
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.fillRect(-2 * s, -29 * s, 2 * s, 20 * s);
+      ctx.fillStyle = `hsla(${(hue + 180) % 360},80%,25%,0.5)`;
+      ctx.fillRect(2 * s, -27 * s, s, 18 * s);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = `hsl(${h2},100%,80%)`;
+      ctx.fillRect(-s, -33 * s, 3 * s, 4 * s);
+      ctx.fillRect(0, -35 * s, s, 2 * s);
+      ctx.fillStyle = `hsl(${h3},100%,50%)`;
+      ctx.fillRect(-8 * s, -7 * s, 16 * s, 5 * s);
+      ctx.fillStyle = `hsla(${h3},80%,28%,0.7)`;
+      ctx.fillRect(-8 * s, -3 * s, 16 * s, s);
+      ctx.fillStyle = '#2a1a0a';
+      ctx.fillRect(-s, -2 * s, 4 * s, 10 * s);
+      ctx.fillStyle = '#150d05';
+      ctx.fillRect(2 * s, 0, s, 8 * s);
+      ctx.shadowColor = `hsl(${(hue + 60) % 360},100%,70%)`; ctx.shadowBlur = 4;
+      ctx.fillStyle = `hsl(${(hue + 60) % 360},100%,60%)`;
+      ctx.fillRect(-2 * s, 8 * s, 7 * s, 4 * s);
+      ctx.fillStyle = `hsl(${(hue + 60) % 360},100%,80%)`;
+      ctx.fillRect(-2 * s, 8 * s, 7 * s, s);
+      ctx.shadowBlur = 0;
+    },
+  },
+
   _star(ctx, cx, cy, r) {
     ctx.beginPath();
     for (let i=0; i<5; i++) {
