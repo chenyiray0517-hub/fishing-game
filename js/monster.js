@@ -124,6 +124,7 @@ class MonsterManager {
     this.monsterType = monsterType;
     this.monsters = [];
     this.killNotify = null;
+    this.dropNotify = null;
     this.killNotifyT = 0;
   }
 
@@ -167,9 +168,16 @@ class MonsterManager {
           m.dead = true;
           const reward = CONFIG.MONSTERS[m.type].reward;
           game.player.money += reward;
-          game.player.save();
+          if (Math.random() < 0.5) {
+            const itemCfg = CONFIG.ITEMS[Math.floor(Math.random() * CONFIG.ITEMS.length)];
+            game.player.addItem(itemCfg.id); // addItem 內部會 save，也一併儲存 money
+            this.dropNotify = `${itemCfg.icon} 獲得 ${itemCfg.name}！`;
+          } else {
+            game.player.save();
+            this.dropNotify = null;
+          }
           this.killNotify = `+$${reward}`;
-          this.killNotifyT = 90;
+          this.killNotifyT = 120;
         }
         hit = true;
       }
@@ -181,9 +189,14 @@ class MonsterManager {
     for (const m of this.monsters) m.draw(ctx);
     if (this.killNotifyT > 0) {
       const a = Math.min(1, this.killNotifyT / 30);
-      ctx.fillStyle = `rgba(255,220,60,${a.toFixed(3)})`;
       ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = `rgba(255,220,60,${a.toFixed(3)})`;
       ctx.fillText(this.killNotify, CONFIG.W / 2, CONFIG.H / 2 - 80);
+      if (this.dropNotify) {
+        ctx.fillStyle = `rgba(80,255,180,${a.toFixed(3)})`;
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText(this.dropNotify, CONFIG.W / 2, CONFIG.H / 2 - 60);
+      }
     }
   }
 }
