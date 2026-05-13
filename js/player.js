@@ -117,23 +117,12 @@ class Player {
   }
 
   takeDamage(dmg) {
+    if (this.hp <= 0) return; // HP=0 時進入 SAN 扣除狀態，忽略傷害
     if (this.san >= 100) return; // SAN 滿時免疫傷害
+    this.lastDmgTimer = 0; // 重設回血計時
     this.hp = Math.max(0, this.hp - dmg);
-    this.san = Math.min(100, this.san + 8); // 被攻擊增加 SAN
+    this.san = Math.min(100, this.san + 8);
     this.hitFlash = 18;
-    if (this.hp <= 0) {
-      this.hp = this.maxHp;
-      this.money = Math.floor(this.money * 0.8);
-      this.fish = [];
-      this.save();
-      for (const s of [game.ocean, game.ocean2, game.lake, game.beach, game.pond]) {
-        s.fishing.reset();
-        if (s.monsterMgr) for (const m of s.monsterMgr.monsters) m.dead = true;
-      }
-      game.scene = 'harbor';
-      this.x = game.harbor.BED.x;
-      this.y = game.harbor.BED.y;
-    }
   }
 
   unlockArea(area) {

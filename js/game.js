@@ -417,18 +417,23 @@ function drinkEnergy() {
 function updateSAN() {
   const p = game.player;
 
-  // Death countdown
+  // Death countdown (triggered when SAN drains to 0)
   if (p.deathTimer > 0) {
     p.deathTimer--;
     if (p.deathTimer <= 0) {
+      p.hp = p.maxHp;
+      p.money = Math.floor(p.money * 0.8);
       p.fish = [];
       p.san = 0; p.sanTimer = 0; p.deathTimer = -1; p.lying = false;
+      p.sanDrainTimer = 0; p.lastDmgTimer = 0; p.hpRegenTimer = 0;
       p.save();
       game.ocean.fishing.reset();
       game.ocean2.fishing.reset();
       game.lake.fishing.reset();
       game.beach.fishing.reset();
       game.pond.fishing.reset();
+      for (const s of [game.ocean, game.ocean2, game.lake, game.beach, game.pond])
+        if (s.monsterMgr) for (const m of s.monsterMgr.monsters) m.dead = true;
       game.scene = 'harbor';
       p.x = game.harbor.BED.x; p.y = game.harbor.BED.y;
     }
@@ -449,16 +454,30 @@ function updateSAN() {
     if (p.sanTimer >= 180) { p.sanTimer = 0; p.san = Math.min(100, p.san + 1); }
   }
 
-  // Passive HP regen: +1 every 5 seconds (300 frames)
+  // HP=0 → drain SAN (2/sec); SAN=0 → 3-second death countdown
+  if (p.hp <= 0) {
+    p.sanDrainTimer = (p.sanDrainTimer || 0) + 1;
+    if (p.sanDrainTimer >= 30) {
+      p.sanDrainTimer = 0;
+      p.san = Math.max(0, p.san - 2);
+      if (p.san <= 0) p.deathTimer = 180;
+    }
+    return;
+  }
+  p.sanDrainTimer = 0;
+
+  // HP regen: 3 sec after last damage → +2/sec
+  p.lastDmgTimer = (p.lastDmgTimer || 0) + 1;
   if (p.hp < p.maxHp) {
-    p.hpRegenTimer = (p.hpRegenTimer || 0) + 1;
-    if (p.hpRegenTimer >= 300) { p.hpRegenTimer = 0; p.hp = Math.min(p.maxHp, p.hp + 1); }
+    if (p.lastDmgTimer >= 180) {
+      p.hpRegenTimer = (p.hpRegenTimer || 0) + 1;
+      if (p.hpRegenTimer >= 30) { p.hpRegenTimer = 0; p.hp = Math.min(p.maxHp, p.hp + 2); }
+    } else {
+      p.hpRegenTimer = 0;
+    }
   } else {
     p.hpRegenTimer = 0;
   }
-
-  // Trigger death countdown
-  if (p.san >= 100 && p.deathTimer < 0) p.deathTimer = 5 * 60;
 }
 
 function render() {
