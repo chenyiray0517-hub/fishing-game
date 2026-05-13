@@ -298,7 +298,7 @@ function update() {
     (game.daynight.nightAlpha > 0.3 || game.scene === 'pond');
   if (_isNightScene) {
     game.waveTimer++;
-    if (game.waveTimer >= 7200) { // 120 s × 60 fps = 2 分鐘
+    if (game.waveTimer >= 3600) { // 60 s × 60 fps = 1 分鐘
       game.waveTimer = 0;
       triggerWave();
     }
