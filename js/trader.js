@@ -24,8 +24,11 @@ class TraderUI {
 
   _exchangeList() {
     return [
-      { id: 'netherstone', name: '獄髓',    cost: 40, icon: '💎' },
-      { id: 'myth_gem',    name: '神話寶石', cost: 80, icon: '💠' },
+      { id: 'netherstone', name: '獄髓',         cost: 40, icon: '💎' },
+      { id: 'myth_gem',    name: '神話寶石',      cost: 80, icon: '💠' },
+      { id: 'beach_map',   name: '海灘地圖',      cost: 30, icon: '🗺️', kind: 'item' },
+      { id: 'pond_map',    name: '秘密池塘地圖',  cost: 30, icon: '📜', kind: 'item' },
+      { id: 'ocean2_map',  name: '第二海海圖',    cost: 30, icon: '🌀', kind: 'item' },
     ];
   }
 
@@ -70,7 +73,7 @@ class TraderUI {
     if (key === 'ArrowRight') {
       const item = items[this.sel];
       if (this.tab === 0 && item) this.qty = Math.min(item.count, this.qty + 1);
-      else if (this.tab === 1)    this.qty = Math.min(99, this.qty + 1);
+      else if (this.tab === 1 && !item?.kind) this.qty = Math.min(99, this.qty + 1);
       return true;
     }
     if (key === 'Enter') { this.act(player, items[this.sel]); return true; }
@@ -93,13 +96,22 @@ class TraderUI {
       if (this.sel >= rem.length) this.sel = Math.max(0, rem.length - 1);
 
     } else if (this.tab === 1) {
-      const cost = item.cost * this.qty;
-      if (player.specialCoins < cost) { this.notify(`特殊幣不足！需要 ${cost}`, false); return; }
-      player.specialCoins -= cost;
-      player.craftMaterials[item.id] = (player.craftMaterials[item.id] || 0) + this.qty;
-      player.save();
-      this.notify(`兌換 ${item.name} ×${this.qty}！`);
-      this.qty = 1;
+      if (item.kind === 'item') {
+        const itemCfg = CONFIG.ITEMS.find(c => c.id === item.id);
+        if (itemCfg?.area && player.isUnlocked(itemCfg.area)) { this.notify('此地區已解鎖！', false); return; }
+        if (player.specialCoins < item.cost) { this.notify(`特殊幣不足！需要 ${item.cost}`, false); return; }
+        player.specialCoins -= item.cost;
+        player.addItem(item.id);
+        this.notify(`兌換 ${item.name}！`);
+      } else {
+        const cost = item.cost * this.qty;
+        if (player.specialCoins < cost) { this.notify(`特殊幣不足！需要 ${cost}`, false); return; }
+        player.specialCoins -= cost;
+        player.craftMaterials[item.id] = (player.craftMaterials[item.id] || 0) + this.qty;
+        player.save();
+        this.notify(`兌換 ${item.name} ×${this.qty}！`);
+        this.qty = 1;
+      }
 
     } else if (this.tab === 2) {
       if (player.ownedSwords.includes(item.swordId)) { this.notify('已擁有此武器！', false); return; }
@@ -141,7 +153,7 @@ class TraderUI {
 
       this.sel = i;
 
-      if (this.tab === 0 || this.tab === 1) {
+      if (this.tab === 0 || (this.tab === 1 && !items[i]?.kind)) {
         const minusX = x + W - 110, plusX = x + W - 50;
         const midY = iy + iH / 2;
         if (Math.hypot(p.x - minusX, p.y - midY) < 16) { this.qty = Math.max(1, this.qty - 1); return; }
@@ -253,19 +265,34 @@ class TraderUI {
         }
 
       } else if (this.tab === 1) {
-        const { id, name, cost, icon } = item;
-        const have = player.craftMaterials?.[id] || 0;
+        const { id, name, cost, icon, kind } = item;
         ctx.textAlign = 'left';
-        ctx.font = 'bold 14px sans-serif'; ctx.fillStyle = '#ddeeff';
-        ctx.fillText(`${icon} ${name}`, x + 16, iy + 22);
-        ctx.font = '12px sans-serif'; ctx.fillStyle = '#8899aa';
-        ctx.fillText(`庫存: ${have}  每個 ${cost} 幣`, x + 16, iy + 40);
-        if (isSel) {
-          const total = cost * this.qty;
-          this._drawQtyControls(ctx, x, W, iy, iH, this.qty, total, '幣', player.specialCoins < total);
+        ctx.font = 'bold 14px sans-serif';
+
+        if (kind === 'item') {
+          const itemCfg = CONFIG.ITEMS.find(c => c.id === id);
+          const unlocked = itemCfg?.area && player.isUnlocked(itemCfg.area);
+          const inBag = player.itemCount(id);
+          ctx.fillStyle = unlocked ? '#88ff88' : '#ddeeff';
+          ctx.fillText(`${icon} ${name}`, x + 16, iy + 22);
+          ctx.font = '12px sans-serif'; ctx.fillStyle = '#8899aa';
+          ctx.fillText(unlocked ? '已解鎖此地區' : `背包: ${inBag}  ${cost} 特殊幣`, x + 16, iy + 40);
+          ctx.textAlign = 'right'; ctx.font = 'bold 13px sans-serif';
+          ctx.fillStyle = unlocked ? '#44ff88' : player.specialCoins >= cost ? '#ffdd55' : '#ff5544';
+          ctx.fillText(unlocked ? '已解鎖' : `${cost} 幣`, x + W - 18, iy + 22);
         } else {
-          ctx.textAlign = 'right'; ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = '#ffdd55';
-          ctx.fillText(`${cost} 幣/個`, x + W - 18, iy + 22);
+          const have = player.craftMaterials?.[id] || 0;
+          ctx.fillStyle = '#ddeeff';
+          ctx.fillText(`${icon} ${name}`, x + 16, iy + 22);
+          ctx.font = '12px sans-serif'; ctx.fillStyle = '#8899aa';
+          ctx.fillText(`庫存: ${have}  每個 ${cost} 幣`, x + 16, iy + 40);
+          if (isSel) {
+            const total = cost * this.qty;
+            this._drawQtyControls(ctx, x, W, iy, iH, this.qty, total, '幣', player.specialCoins < total);
+          } else {
+            ctx.textAlign = 'right'; ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = '#ffdd55';
+            ctx.fillText(`${cost} 幣/個`, x + W - 18, iy + 22);
+          }
         }
 
       } else {
