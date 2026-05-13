@@ -125,8 +125,8 @@ const CONFIG = {
     { id: 'steel',   name: '鋼劍',   price: 6000,  power: 88,  color: '#d4dce4', craft: false },
     { id: 'gold',    name: '金劍',   price: 14000, power: 135, color: '#ffd700', craft: false },
     { id: 'diamond', name: '鑽石劍', price: 35000, power: 200, color: '#88eeff', craft: false },
-    { id: 'nether',  name: '獄髓劍', price: 30000, power: 320, color: '#3c1a08', craft: false },
-    { id: 'myth',    name: '神話劍', price: 50000, power: 500, color: '#ff88cc', craft: false },
+    { id: 'nether',  name: '獄髓劍', price: 0,     power: 320, color: '#3c1a08', craft: true  },
+    { id: 'myth',    name: '神話劍', price: 0,     power: 500, color: '#ff88cc', craft: true  },
   ],
 
   MONSTERS: {
